@@ -19,12 +19,12 @@ class PULSER
 
 		// get system status and carry globals over if set
 		if (isset($_POST['STATE'])){
-			SYSTEM::$GET->GLOBAL = $_POST['STATE'];
+			$SYSTEM->GLOBAL = $_POST['STATE'];
 		}
 		
 		// get the time window of the pulse
 		$this->beginTime = $_SERVER['REQUEST_TIME'];
-		$this->endTime = SYSTEM::$GET->TIMEOUT + $this->beginTime;
+		$this->endTime = $SYSTEM->TIMEOUT + $this->beginTime;
 
 		// Terminate request and close connection to previous pulser if possible
 		if (function_exists("ignore_user_abort")){
@@ -52,7 +52,7 @@ class PULSER
 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
 		curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 10); 
 
-		curl_setopt($ch, CURLOPT_POSTFIELDS, SYSTEM::$GET->GLOBAL);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $SYSTEM->GLOBAL);
 
 		curl_exec($ch);  
 		curl_close($ch);

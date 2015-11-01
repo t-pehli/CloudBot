@@ -5,12 +5,10 @@
 */
 class SYSTEM
 {
-	public static $GET;
 
 	// ---------------- Constructor ------------------
 	public function __construct () {
 
-		self::$GET = $this;
 		$conf = $this->loadConfiguration();
 		$this->setConfiguration($conf);
 	}
