@@ -3,28 +3,27 @@
 /**
 * 
 */
-class PULSER
+class PULSE_MANAGER
 {
 
-
 	// ---------------- Constructor ------------------
-	public function __construct() {
-
-		self::$pulseCounter = 0;
+	public static function setup() {
+		// Pulse is starting
+		self::pulseBegin();
 	}
 	// -----------------------------------------------
 
 	// ----------- Pulse Handlng Methods -------------
-	public function pulseBegin(){
+	public static function pulseBegin(){
 
 		// get system status and carry globals over if set
 		if (isset($_POST['STATE'])){
-			$SYSTEM->GLOBAL = $_POST['STATE'];
+			SYSTEM::$MEMORY = $_POST['STATE'];
 		}
 		
 		// get the time window of the pulse
-		$this->beginTime = $_SERVER['REQUEST_TIME'];
-		$this->endTime = $SYSTEM->TIMEOUT + $this->beginTime;
+		self::$beginTime = $_SERVER['REQUEST_TIME'];
+		self::$endTime = SYSTEM::$PARAMETERS['TIMEOUT'] + self::$beginTime;
 
 		// Terminate request and close connection to previous pulser if possible
 		if (function_exists("ignore_user_abort")){
@@ -36,7 +35,7 @@ class PULSER
 		}
 	}
 
-	public function pulseEnd(){
+	public static function pulseEnd(){
 		
 		//Start a new request to the next pulser
 		$nextUrl = "cloudos1.localhost";
@@ -45,52 +44,41 @@ class PULSER
 
 		$ch = curl_init($nextUrl); 
 		curl_setopt($ch, CURLOPT_RESOLVE, $nextUrl .":". $nextPort .":". $nextIP);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 1);
+		curl_setopt($ch, CURLOPT_PARAMETERS['TIMEOUT'], 1);
 		curl_setopt($ch, CURLOPT_HEADER, 0);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
 		curl_setopt($ch, CURLOPT_FORBID_REUSE, true);
 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
 		curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 10); 
 
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $SYSTEM->GLOBAL);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, SYSTEM::$MEMORY);
 
 		curl_exec($ch);  
 		curl_close($ch);
 	}
 
-	public function pulse(){
+	public static function pulseCheck(){
 
-		if (self::$pulseCounter == 0) {
-			// Pulse is starting
-			$this->pulseBegin();
-			self::$pulseCounter ++;
+		// Regular pulse. check time
+		$timeRemaining = self::$endTime - time();
 		
+		if( $timeRemaining > 0 && $timeRemaining <= 1 ){
+			// self::pulseEnd();
+			return false;
 		} else {
-			// Regular pulse. check time
-			$timeRemaining = $this->endTime - time();
-			
-			if( $timeRemaining > 0 && $timeRemaining <= 1 ){
-				// $this->pulseEnd();
-			
-			} else{
-				self::$pulseCounter ++;
-			} 
+			return true;
 		}
-
-		self::$pulseCounter ++;
 	}
 
 
 	// -----------------------------------------------
 
-
-	public static $pulseCounter;
 	
-	public $beginTime;
-	public $endTime;
+	public static $beginTime;
+	public static $endTime;
 
 }
-$PULSER = new PULSER();
+PULSE_MANAGER::setup();
 
 
 
