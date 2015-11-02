@@ -1,30 +1,29 @@
 <?php
 
-	file_put_contents("filename.txt", "Test");
 	
 
 
 	require('os/kernel/system.php');
-	require('os/kernel/pulser.php');
+	require('os/kernel/pulse_manager.php');
+	require('os/kernel/process_manager.php');
 
-	$PULSER->pulse();
-	file_put_contents("filename.txt", $SYSTEM->TIMEOUT);
-	sleep(3);
-
-	$PULSER->pulse();
-	$PULSER->pulse();
-	$PULSER->pulse();
-	$PULSER->pulse();
-	$PULSER->pulse();
-
-
-	// $PULSER->pulseEnd();
+	$i=0;
+	
+	PROCESS_MANAGER::run("Debug");
 
 
 
+	while( PULSE_MANAGER::pulseCheck() && $i<40 ){
+
+		file_put_contents("filename.txt", "Main Loop $i :  ", FILE_APPEND);
+
+		PROCESS_MANAGER::loop();
+		$i++;
 
 
-	// $SYSTEM->loadModules();
+	}
+
+
 
 
 

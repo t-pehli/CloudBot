@@ -7,57 +7,51 @@ class SYSTEM
 {
 
 	// ---------------- Constructor ------------------
-	public function __construct () {
+	public static function setup () {
 
-		$conf = $this->loadConfiguration();
-		$this->setConfiguration($conf);
+		self::loadConfiguration();
+		self::loadRegistry();
+
+		self::$PARAMETERS['VERSION'] ="0.1";
 	}
 	// -----------------------------------------------
 
 
 
-	// ----------- Configuration Methods -------------
-	public function setConfiguration($conf){
+	// --------- Resource Handling Methods -----------
+	public static function loadConfiguration(){
 
+		$conf = json_decode( file_get_contents("os/kernel/conf.json"), true);
 		foreach ($conf as $property => $value) {
-			$this->$property = $value;
+			self::$PARAMETERS[$property] = $value;
 		}
 	}
 
-	public function loadConfiguration(){
-
-		return json_decode( file_get_contents("os/kernel/conf.json"), true);
-	}
-
-	public function storeConfiguration($conf){
-
-		$this->setConfiguration($conf);
-		file_put_contents( "os/kernel/conf.json", json_encode($conf) );
-	}
-	// -----------------------------------------------
-
-	// ---------- Module Loading Methods -------------
-	public function loadModules(){
+	public static function loadRegistry(){
 		
-		foreach ($this->MODULES as $module => $filename) {
-			include($filename);
-		}
+		self::$REGISTRY = json_decode( file_get_contents("os/kernel/registry.json"), true);
+	}
+
+	public static function addToRegistry($program, $properties){
+		
+		self::$REGISTRY[$program] = $properties;
+		file_put_contents( "os/kernel/registry.json", json_encode($this->REGISTRY) );
+	}
+
+	public static function removeFromRegistry($program){
+		
+		unset(self::$REGISTRY[$program]);
+		file_put_contents( "os/kernel/registry.json", json_encode($this->REGISTRY) );
 	}
 	// -----------------------------------------------
 
 
-
-	public $VERSION ="0.0";
-
-	public $MODULES = array(
-			// 'PULSER'=>"system/kernel/pulser.php",
-			'IO'=>"os/kernel/io.php"		
-		);
-
-	public $GLOBAL = array();
+	public static $PARAMETERS = [];
+	public static $REGISTRY = [];
+	public static $MEMORY = [];
 
 
 }
-$SYSTEM = new SYSTEM();
+SYSTEM::setup();
 
 ?>
