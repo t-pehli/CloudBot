@@ -30,51 +30,92 @@ class PROCESS_MANAGER
 		}
 
 		// Loop through active processes and call loop
-		foreach ( self::$processes as $process) {
+		foreach ( self::$PROCESSES as $process) {
 			
-			if( $process['status'] == 0 ){
-				// process is starting right now, include source and setup
-				include( $process['location'] );
-				$process['name']::setup();
-				$process['status']=1;
-			}
+			// Process status: 0-starting, 1-active, 2-paused
 
 			if( $process['status'] == 1 ){
-				// process is resuming, load globals if any
-				if( array_key_exists( $process['name'], SYSTEM::$MEMORY )){
-					$process['name']::MEMORY = SYSTEM::$MEMORY[$process['name']];
-				}
-				$process['status']=2;
-			}
-
-			if( $process['status'] == 2 ){
 				// process is running, call loop normally
-				$process['name']::loop();	
+				$process['name']::loop();
 			
 			}
 		}
 
 	}
 
-	public static function run(){
+	public static function run($process, $scriptmode = 0){
+		$process['name'] = strtoupper( $process['name'] );
 
+		if( $scriptmode == 0 && array_key_exists( $process['name'], SYSTEM::$REGISTRY )){
+				
+			// process is starting right now, include source and setup
+			include( SYSTEM::$REGISTRY[$process['name']]['location'] );
+
+			$mainClass = SYSTEM::$REGISTRY[$process['name']]['mainClass'];
+			$mainClass::setup();
+			$process['status'] = 0;
+			self::$PROCESSES[$process['name']]=$process;
+			self::resume($process, $scriptmode);
+
+			
+		} else if ( $scriptmode == 1 ) {
+			// TODO executable script handling, temp memory?
+		} else {
+			// TODO throw error no such process
+		}
 	}
 
-	public static function resume(){
+	public static function resume( $process, $scriptmode = 0 ){
+		$process['name'] = strtoupper( $process['name'] );
 
+		if( $scriptmode == 0 && array_key_exists( $process['name'], self::$PROCESSES )){
+				
+			// process is resuming, load globals if any
+			if( array_key_exists( $process['name'], SYSTEM::$MEMORY ) && isset( $process['name']::$MEMORY )){
+				$process['name']::$MEMORY = SYSTEM::$MEMORY[$process['name']];
+			}
+			self::$PROCESSES[$process['name']]['status'] = 1;
+			
+		} else if ( $scriptmode == 1 ) {
+			// TODO executable script handling, temp memory?
+		} else {
+			// TODO throw error no such process
+		}
 	}
 
-	public static function pause(){
+	public static function pause( $process, $scriptmode = 0 ){
 
+		if( $scriptmode == 0 && array_key_exists( $process['name'], self::$PROCESSES )){
+
+			// process is pausing, put globals in system memory and update status
+			SYSTEM::$MEMORY[$process['name']] = $process['name']::$MEMORY;
+			self::$PROCESSES[$process['name']]['status'] = 2;
+			
+		} else if ( $scriptmode == 1 ) {
+			// TODO executable script handling, temp memory?
+		} else {
+			// TODO throw error no such process running
+		}
 	}
 
-	public static function kill(){
+	public static function kill( $process, $scriptmode = 0 ){
+		
+		if( $scriptmode == 0 && array_key_exists( $process['name'], self::$PROCESSES )){
 
+			// process is killed, clear globals in system memory and remove from active
+			unset ( SYSTEM::$MEMORY[$process['name']] );
+			unset ( self::$PROCESSES[$process['name']] );
+			
+		} else if ( $scriptmode == 1 ) {
+			// TODO executable script handling, temp memory?
+		} else {
+			// TODO throw error no such process running
+		}	
 	}
 
 	// -----------------------------------------------
 
-	public static $processes = [];
+	public static $PROCESSES = [];
 }
 PROCESS_MANAGER::setup();
 
