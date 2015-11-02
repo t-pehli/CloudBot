@@ -8,19 +8,20 @@
 	require('os/kernel/process_manager.php');
 
 	$i=0;
-	$debugger = ['name'=>"Debug"];
-	PROCESS_MANAGER::run($debugger);
+	
+	PROCESS_MANAGER::run("Debug");
 
-	while( PULSE_MANAGER::pulseCheck() && $i<20 ){
+
+
+	while( PULSE_MANAGER::pulseCheck() && $i<40 ){
+
+		file_put_contents("filename.txt", "Main Loop $i :  ", FILE_APPEND);
 
 		PROCESS_MANAGER::loop();
 		$i++;
 
 
 	}
-
-	
-	
 
 
 
