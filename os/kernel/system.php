@@ -10,9 +10,11 @@ class SYSTEM
 	public static function setup () {
 
 		self::loadConfiguration();
-		self::loadRegistry();
+		// self::loadRegistry();
+		self::loadEnvironment();
 
 		self::$PARAMETERS['VERSION'] ="0.1";
+
 	}
 	// -----------------------------------------------
 
@@ -24,6 +26,19 @@ class SYSTEM
 		$conf = json_decode( file_get_contents("os/kernel/conf.json"), true);
 		foreach ($conf as $property => $value) {
 			self::$PARAMETERS[$property] = $value;
+		}
+	}
+
+	public static function loadEnvironment( $environment = "SHELL"){
+
+		if( $environment == "GUI" ){
+			// TODO Window manager
+			// self::$ENVIRONMENT = "GUI"
+
+		} else {
+			// Initialise shell
+			require("os/shell/shell_manager.php");
+			self::$ENVIRONMENT = "SHELL";
 		}
 	}
 
@@ -49,6 +64,8 @@ class SYSTEM
 	public static $PARAMETERS = [];
 	public static $REGISTRY = [];
 	public static $MEMORY = [];
+	public static $ENVIRONMENT = "";
+	public static $DEBUG = "";
 
 
 }

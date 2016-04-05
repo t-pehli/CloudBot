@@ -3,34 +3,25 @@
 /**
 * 
 */
-class PROCESS_MANAGER
+class PROCESS
 {
 
 	// ---------------- Constructor ------------------
 	public static function setup () {
-		if( SYSTEM::$PARAMETERS['ENVIRONMENT'] == "GUI" ){
-			// TODO Window manager
-		} else {
-			// Initialise shell
-			require("os/shell/shell_manager.php");
-		}
+		
 	}
 	// -----------------------------------------------
 
-	// -------- Process Management Methods -----------
+	// -------- Process Manager Main Loop ------------
 
 	public static function loop(){
 		
 		// Shell/GUI loop
-		if( SYSTEM::$PARAMETERS['ENVIRONMENT'] == "GUI" ){
-			// TODO Window manager
-		
-		} else {
-			// SHELL::loop();
-		}
+		$envClass = SYSTEM::$ENVIRONMENT;
+		// $envClass::loop();
 
 		// Loop through active processes and call loop
-		foreach ( self::$PROCESSES as $process) {
+		foreach ( self::$processList as $process) {
 			
 			// Process status: 0-starting, 1-active, 2-paused
 
@@ -42,7 +33,9 @@ class PROCESS_MANAGER
 		}
 
 	}
+	// -----------------------------------------------
 
+	// -------- Process Management Methods -----------
 	public static function run($process, $scriptmode = 0){
 		$process = strtoupper( $process );
 
@@ -53,7 +46,7 @@ class PROCESS_MANAGER
 
 			$mainClass = SYSTEM::$REGISTRY[$process]['mainClass'];
 			$mainClass::setup();
-			self::$PROCESSES[$process] = array( 'name'=>$process, 'status'=>0 );
+			self::$processList[$process] = array( 'name'=>$process, 'status'=>0 );
 			self::resume($process, $scriptmode);
 
 			
@@ -67,14 +60,15 @@ class PROCESS_MANAGER
 	public static function resume( $process, $scriptmode = 0 ){
 		$process = strtoupper( $process );
 
-		if( $scriptmode == 0 && array_key_exists( $process, self::$PROCESSES )){
+		if( $scriptmode == 0 && array_key_exists( $process, self::$processList )){
 			
 			$mainClass = SYSTEM::$REGISTRY[$process]['mainClass'];
 			// process is resuming, load globals if any
 			if( array_key_exists( $process, SYSTEM::$MEMORY ) && isset( $mainClass::$MEMORY )){
 				$mainClass::$MEMORY = SYSTEM::$MEMORY[$process];
 			}
-			self::$PROCESSES[$process]['status'] = 1;
+			// set as active
+			self::$processList[$process]['status'] = 1;
 			
 		} else if ( $scriptmode == 1 ) {
 			// TODO executable script handling, temp memory?
@@ -86,14 +80,15 @@ class PROCESS_MANAGER
 	public static function pause( $process, $scriptmode = 0 ){
 		$process = strtoupper( $process );
 
-		if( $scriptmode == 0 && array_key_exists( $process, self::$PROCESSES )){
+		if( $scriptmode == 0 && array_key_exists( $process, self::$processList )){
 
 			$mainClass = SYSTEM::$REGISTRY[$process]['mainClass'];
 			// process is pausing, put globals in system memory and update status
 			if(isset( $mainClass::$MEMORY )){
 				SYSTEM::$MEMORY[$process] = $mainClass::$MEMORY;
 			}
-			self::$PROCESSES[$process]['status'] = 2;
+			// set as paused
+			self::$processList[$process]['status'] = 2;
 			
 		} else if ( $scriptmode == 1 ) {
 			// TODO executable script handling, temp memory?
@@ -105,11 +100,11 @@ class PROCESS_MANAGER
 	public static function kill( $process, $scriptmode = 0 ){
 		$process = strtoupper( $process );
 		
-		if( $scriptmode == 0 && array_key_exists( $process, self::$PROCESSES )){
+		if( $scriptmode == 0 && array_key_exists( $process, self::$processList )){
 
 			// process is killed, clear globals in system memory and remove from active
 			unset ( SYSTEM::$MEMORY[$process] );
-			unset ( self::$PROCESSES[$process] );
+			unset ( self::$processList[$process] );
 			
 		} else if ( $scriptmode == 1 ) {
 			// TODO executable script handling, temp memory?
@@ -120,9 +115,9 @@ class PROCESS_MANAGER
 
 	// -----------------------------------------------
 
-	public static $PROCESSES = [];
+	public static $processList = [];
 }
-PROCESS_MANAGER::setup();
+PROCESS::setup();
 
 
 

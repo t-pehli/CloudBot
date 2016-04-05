@@ -3,7 +3,7 @@
 /**
 * 
 */
-class PULSE_MANAGER
+class PULSE
 {
 
 	// ---------------- Constructor ------------------
@@ -20,10 +20,14 @@ class PULSE_MANAGER
 		if (isset($_POST['STATE'])){
 			SYSTEM::$MEMORY = $_POST['STATE'];
 		}
+
+		if (isset($_POST['debug'])){
+			SYSTEM::$DEBUG = $_POST['debug'];
+		}
 		
 		// get the time window of the pulse
-		self::$beginTime = $_SERVER['REQUEST_TIME'];
-		self::$endTime = SYSTEM::$PARAMETERS['TIMEOUT'] + self::$beginTime;
+		self::$beginTime = $_SERVER['REQUEST_TIME_FLOAT']*1000;
+		self::$endTime = SYSTEM::$PARAMETERS['SERVER_TIMEOUT'] + self::$beginTime;
 
 		// Terminate request and close connection to previous pulser if possible
 		if (function_exists("ignore_user_abort")){
@@ -42,25 +46,17 @@ class PULSE_MANAGER
 		$nextPort = "80";
 		$nextIP = "127.0.0.1";
 
-		$ch = curl_init($nextUrl); 
-		curl_setopt($ch, CURLOPT_RESOLVE, $nextUrl .":". $nextPort .":". $nextIP);
-		curl_setopt($ch, CURLOPT_PARAMETERS['TIMEOUT'], 1);
-		curl_setopt($ch, CURLOPT_HEADER, 0);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-		curl_setopt($ch, CURLOPT_FORBID_REUSE, true);
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
-		curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 10); 
-
-		curl_setopt($ch, CURLOPT_POSTFIELDS, SYSTEM::$MEMORY);
-
-		curl_exec($ch);  
-		curl_close($ch);
+		pulseCurl($nextUrl, $nextPort, $nextIP, 
+			array(
+				"access"=>"pulse"
+			) );
+		
 	}
 
 	public static function pulseCheck(){
 
 		// Regular pulse. check time
-		$timeRemaining = self::$endTime - time();
+		$timeRemaining = self::$endTime - ( microtime(true)*1000 );
 		
 		if( $timeRemaining > 0 && $timeRemaining <= 1 ){
 			// self::pulseEnd();
@@ -68,6 +64,25 @@ class PULSE_MANAGER
 		} else {
 			return true;
 		}
+	}
+
+	function pulseCurl( $url, $port, $ip, $data ) {
+
+		$ch = curl_init($url."?access=pulse"); 
+		curl_setopt($ch, CURLOPT_RESOLVE, array( $url.":".$port.":".$ip ));
+	    
+	    curl_setopt($ch, CURLOPT_TIMEOUT, 1);
+	    curl_setopt($ch, CURLOPT_HEADER, 0);
+	    curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+	    curl_setopt($ch, CURLOPT_FORBID_REUSE, true);
+	    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+	    curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 10); 
+
+	    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+		
+		$result = curl_exec($ch);  
+		curl_close($ch);
+		return $result;
 	}
 
 
@@ -78,7 +93,7 @@ class PULSE_MANAGER
 	public static $endTime;
 
 }
-PULSE_MANAGER::setup();
+PULSE::setup();
 
 
 
