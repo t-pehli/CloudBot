@@ -7,27 +7,32 @@ class PULSE
 {
 
 	// ---------------- Constructor ------------------
-	public static function setup() {
-		// Pulse is starting
-		self::pulseBegin();
+	public static function start() {
+
 	}
 	// -----------------------------------------------
 
 	// ----------- Pulse Handlng Methods -------------
-	public static function pulseBegin(){
+	public static function accept(){
 
-		// get system status and carry globals over if set
-		if (isset($_POST['STATE'])){
-			SYSTEM::$MEMORY = $_POST['STATE'];
+		// get pulse count and carry globals over if set
+		if (isset($_POST['pulseCount'])){
+
+			self::$COUNT = $_POST['pulseCount'] + 1 ;
+		}
+		else{
+
+			self::$COUNT = 1;
 		}
 
-		if (isset($_POST['debug'])){
-			SYSTEM::$DEBUG = $_POST['debug'];
+		if (isset($_POST['memory'])){
+
+			SYSTEM::$MEMORY = json_decode( $_POST['memory'] );
 		}
 		
 		// get the time window of the pulse
-		self::$beginTime = $_SERVER['REQUEST_TIME_FLOAT']*1000;
-		self::$endTime = SYSTEM::$PARAMETERS['SERVER_TIMEOUT'] + self::$beginTime;
+		self::$BEGIN_TIME = $_SERVER['REQUEST_TIME_FLOAT']*1000;
+		self::$END_TIME = SYSTEM::$PARAMETERS['SERVER_TIMEOUT'] + self::$BEGIN_TIME;
 
 		// Terminate request and close connection to previous pulser if possible
 		if (function_exists("ignore_user_abort")){
@@ -39,24 +44,26 @@ class PULSE
 		}
 	}
 
-	public static function pulseEnd(){
+	public static function fire( $target ){
 		
 		//Start a new request to the next pulser
-		$nextUrl = "cloudos1.localhost";
+		$nextUrl = "cloudbot.localhost";
 		$nextPort = "80";
 		$nextIP = "127.0.0.1";
 
-		pulseCurl($nextUrl, $nextPort, $nextIP, 
+		self::pulseCurl($nextUrl, $nextPort, $nextIP, 
 			array(
-				"access"=>"pulse"
+				"environment"=>SYSTEM::$ENVIRONMENT,
+				"pulseCount"=>self::$COUNT,
+				"memory"=>json_encode( SYSTEM::$MEMORY )
 			) );
 		
 	}
 
-	public static function pulseCheck(){
+	public static function check(){
 
 		// Regular pulse. check time
-		$timeRemaining = self::$endTime - ( microtime(true)*1000 );
+		$timeRemaining = self::$END_TIME - ( microtime(true)*1000 );
 		
 		if( $timeRemaining > 0 && $timeRemaining <= 1 ){
 			// self::pulseEnd();
@@ -66,7 +73,7 @@ class PULSE
 		}
 	}
 
-	function pulseCurl( $url, $port, $ip, $data ) {
+	public static function pulseCurl( $url, $port, $ip, $data ) {
 
 		$ch = curl_init($url."?access=pulse"); 
 		curl_setopt($ch, CURLOPT_RESOLVE, array( $url.":".$port.":".$ip ));
@@ -89,11 +96,12 @@ class PULSE
 	// -----------------------------------------------
 
 	
-	public static $beginTime;
-	public static $endTime;
+	public static $BEGIN_TIME;
+	public static $END_TIME;
+	public static $COUNT;
 
 }
-PULSE::setup();
+PULSE::start();
 
 
 
