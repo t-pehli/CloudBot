@@ -15,13 +15,12 @@ var lastPath = "/";
 // --------------- State Machine -----------------
 var STM = {
 	state: "idle", // possible states: idle|running|blocked
-	initialise: function ( newState ) {
-
+	initialise: function () {
 		$("#cmd").val("");
 
 		$("#path").text("");
 		this.state = "running";
-		longpoll();
+		longpoll( "ping -s" );
 	},
 	stateEvent: function ( eventType, eventContent ) {
 
@@ -68,8 +67,11 @@ var STM = {
 
 						this.state = "idle";
 					}
-					else if( i<eventContent.length && eventContent[i].type == "error" ){
-						// check if an error is left, break and print
+					else if( i<eventContent.length && eventContent[i].type == "ping" ){
+						// got a ping back, (re)start session
+
+						// var mainDiv = $("#main");
+						// mainDiv.append( "<p>Connected to CloudOS</p>" );
 
 						$("#path").text( lastPath +">" );
 						var mainDiv = $("#main");
@@ -146,8 +148,7 @@ function longpoll( postData ){
 		clearTimeout(timeout);
 		timeout = setTimeout( function(){ longpoll(); }, waitTime);
 
-		STM.stateEvent( "poll", response );
-		
+		STM.stateEvent( "poll", response );		
 	}
 
 	var onFail = function(e){
@@ -207,6 +208,7 @@ $("#wrapper").click( function(){
 
 // ---------------- Main Logic -------------------
 $(function(){
+
 	// Page Loaded
 
 	STM.initialise();

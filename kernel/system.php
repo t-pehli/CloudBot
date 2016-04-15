@@ -9,9 +9,38 @@ class SYSTEM
 	// ---------------- Constructor ------------------
 	public static function start () {
 
-		self::loadConfiguration();
-		self::loadStatus();
+		SYSTEM::$CYCLE = 0;
 
+		SYSTEM::loadConfiguration();
+		SYSTEM::loadStatus();
+
+		function shutdown() {
+		
+			$error = error_get_last();
+			
+			if ($error['type'] === E_ERROR) {
+				// fatal error has occured
+				chdir( "/home/tpehli/Projects/CloudOS/cloudbot/public_html/" );
+
+				SYSTEM::powerOff();
+
+				SYSTEM::logx( "Error: ".$error["message"] );
+				SYSTEM::logx( "File: ".$error["file"]." line: ".$error["line"] );
+
+				if( isset( SYSTEM::$ENVIRONMENT ) && SYSTEM::$ENVIRONMENT == "SHELL" ){
+
+					IO::printx( "Error: ".$error["message"] );
+					IO::printx( "File: ".$error["file"]." line: ".$error["line"] );
+					SHELL::returnx();
+					IO::loop();
+					SYSTEM::$MEMORY['SHELL_STATE'] = "idle";
+				}
+
+				PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
+			}
+		}
+
+		register_shutdown_function('shutdown');
 	}
 	// -----------------------------------------------
 
@@ -22,93 +51,139 @@ class SYSTEM
 
 		$conf = json_decode( file_get_contents("kernel/conf.json"), true);
 		foreach ($conf as $property => $value) {
-			self::$PARAMETERS[$property] = $value;
+			SYSTEM::$PARAMETERS[$property] = $value;
 		}
 	}
 
 	public static function loadStatus( ){
 
-		self::$STATUS = json_decode( file_get_contents("kernel/status.json"), true);
+		SYSTEM::$STATUS = json_decode( file_get_contents("kernel/status.json"), true);
+		if( !isset( SYSTEM::$STATUS['POWER'] ) ){
+
+			SYSTEM::$STATUS['POWER'] = "OFF";
+		}
+
+		if( !isset( SYSTEM::$STATUS['CONNECTION'] ) ){
+
+			SYSTEM::$STATUS['CONNECTION'] = "OFF";
+		}
+	}
+
+	public static function saveStatus( ){
+
+		file_put_contents( "kernel/status.json", json_encode(SYSTEM::$STATUS) );
 	}
 
 	public static function loadEnvironment(){
 
 		if( 
 			isset($_POST['environment']) 
-			&& array_key_exists( $_POST['environment'], self::$PARAMETERS['ENVIRONMENTS'])
+			&& array_key_exists( $_POST['environment'], SYSTEM::$PARAMETERS['ENVIRONMENTS'])
 		){
 		
-				self::$ENVIRONMENT = $_POST['environment'];
+			SYSTEM::$ENVIRONMENT = $_POST['environment'];
+			SYSTEM::$STATUS['ENVIRONMENT'] = SYSTEM::$ENVIRONMENT;
+		}
+		else if( isset(SYSTEM::$STATUS['ENVIRONMENT']) ){
+
+			SYSTEM::$ENVIRONMENT = SYSTEM::$STATUS['ENVIRONMENT'];
 		}
 		else{
 
-			self::$ENVIRONMENT = "SHELL";	
+			SYSTEM::$ENVIRONMENT = "SHELL";
+			SYSTEM::$STATUS['ENVIRONMENT'] = SYSTEM::$ENVIRONMENT;
 		}
-		self::$STATUS['ENVIRONMENT'] = self::$ENVIRONMENT;
 	
+	}
+
+	public static function logx ( $out ){
+		// stringify if not
+		if( !is_string($out) ) {
+			$out = print_r( $out, true );
+		}
+
+		if( $out == "CLEAR_LOG" ){
+
+			file_put_contents("log.txt", "CloudOS System Logfile:");
+		}
+		else {
+
+			file_put_contents("log.txt", "\n".$out, FILE_APPEND);
+		}
+	}
+
+	// -----------------------------------------------
+
+	// ---------- Main Operation Methods -------------
+	public static function loop(){
+
+		if( !PULSE::check() ){
+
+			SYSTEM::$CYCLE = -1;
+		}
+		else {
+
+			SYSTEM::$CYCLE++;
+			usleep( 20000 );
+		}
+		
 	}
 
 	public static function runDirective( $directive ){
 		
 		if( strcasecmp( $directive, "STATUS") == 0 ){
 
-			self::echoStatus();
+			echo json_encode( SYSTEM::$STATUS );
 		}
 		else if( strcasecmp( $directive, "START") == 0 ){
 
-			self::powerOn();
+			SYSTEM::powerOn();
 		}
 		else if( strcasecmp( $directive, "STOP") == 0 ){
 
-			self::powerOff();
-			self::echoStatus();
+			SYSTEM::powerOff();
+			echo json_encode( SYSTEM::$STATUS );
 		}
 		
 	}
-	
-	public static function echoStatus(){
 
-		echo json_encode( self::$STATUS );
-	}
-	// -----------------------------------------------
 
-	// ---------- Main Operation Methods -------------
 	public static function powerOn(){
 
-		if( self::$STATUS['POWER'] != "ON" ){
+			SYSTEM::logx( "CLEAR_LOG" );
 
-			self::$STATUS['POWER'] = "ON";
+		if( SYSTEM::$STATUS['POWER'] != "ON" ){
 
-			self::loadEnvironment();		
+			SYSTEM::$STATUS['POWER'] = "ON";
+			SYSTEM::$STATUS['CONNECTION'] = "OFF";
+			SYSTEM::saveStatus();
 
-			require( self::$PARAMETERS['ENVIRONMENTS'][self::$ENVIRONMENT]['LOCATION_FRONT'] );
+			require( SYSTEM::$PARAMETERS['ENVIRONMENTS'][SYSTEM::$ENVIRONMENT]['LOCATION_FRONT'] );
 			
 			require( "kernel/pulse_manager.php" );
 			PULSE::$COUNT = 0;
-			PULSE::fire( self::$PARAMETERS['ADDRESS'] );
-
-			file_put_contents( "kernel/status.json", json_encode(self::$STATUS) );
+			PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
 		}
 		else {
 
-			echo "Already online!";
+			SYSTEM::logx( "Already online!" );
 		}
 	}
 
 	public static function powerOff(){
 
-		if( self::$STATUS['POWER'] != "OFF" ){
+		if( SYSTEM::$STATUS['POWER'] != "OFF" ){
 
-			self::$STATUS = [];
-			self::$STATUS['POWER'] = "OFF";
-			file_put_contents("kernel/status.json", json_encode(self::$STATUS) );
+			SYSTEM::$STATUS = [];
+			SYSTEM::$STATUS['POWER'] = "OFF";
+			SYSTEM::$STATUS['CONNECTION'] = "OFF";
+			SYSTEM::saveStatus();
 		}
 		else {
 
-			echo "Already offline!";
+			SYSTEM::logx( "Already offline!" );
 		}
 	}
-
 	// -----------------------------------------------
 
 
@@ -116,6 +191,7 @@ class SYSTEM
 	public static $MEMORY = [];
 	public static $STATUS = [];
 	public static $ENVIRONMENT = "";
+	public static $CYCLE = 0;
 	public static $DEBUG = "";
 
 

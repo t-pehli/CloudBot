@@ -10,9 +10,9 @@ class IO
 	// ---------------- Constructor ------------------
 	public static function start () {
 
-		self::$bufferCounter = 0;
-		file_put_contents("shell/io/output_buffer", "");
-		file_put_contents("shell/io/input_buffer", "");
+		IO::$bufferCounter = 0;
+		// file_put_contents("shell/io/output_buffer", "");
+		// file_put_contents("shell/io/input_buffer", "");
 	}
 	// -----------------------------------------------
 
@@ -29,14 +29,14 @@ class IO
 			
 			$serialInput = '['.substr($serialInput, 2).']';
 			$input = json_decode( $serialInput );
-			self::$inputBuffer = array_merge( self::$inputBuffer, $input );
+			IO::$inputBuffer = array_merge( IO::$inputBuffer, $input );
 		}
 		// clear external output buffer
 		// =========================
 		
 		// ===== Output Buffer =====
 		$dump = "";
-		foreach (self::$outputBuffer as $out) {
+		foreach (IO::$outputBuffer as $out) {
 			// place stuff from the internal output buffer to the external (file)
 			$dump .= ",\n".$out;
 		}
@@ -44,7 +44,7 @@ class IO
 		file_put_contents("shell/io/output_buffer", $dump, FILE_APPEND);
 		
 		// clear internal output buffer
-		self::$outputBuffer = [];
+		IO::$outputBuffer = [];
 		// =========================
 
 		
@@ -60,26 +60,26 @@ class IO
 		}
 
 		$serialOut = json_encode( 
-			array( "id"=>self::$bufferCounter, "type"=>"msg", "content"=>$out ) );
+			array( "id"=>IO::$bufferCounter, "type"=>"msg", "content"=>$out ) );
 
-		self::$bufferCounter++;
-		array_push( self::$outputBuffer, $serialOut );
+		IO::$bufferCounter++;
+		array_push( IO::$outputBuffer, $serialOut );
 	}
 
 	public static function returnx (){
 
 		$serialOut = json_encode( 
-			array( "id"=>self::$bufferCounter, "type"=>"path", "content"=>SHELL::$PATH ) );
+			array( "id"=>IO::$bufferCounter, "type"=>"path", "content"=>SHELL::$PATH ) );
 
-		self::$bufferCounter++;
-		array_push( self::$outputBuffer, $serialOut );
+		IO::$bufferCounter++;
+		array_push( IO::$outputBuffer, $serialOut );
 	}
 
 	public static function readx (){
 
-		if( !empty( self::$inputBuffer ) ){
+		if( !empty( IO::$inputBuffer ) ){
 
-			return array_shift( self::$inputBuffer );
+			return array_shift( IO::$inputBuffer );
 		}
 		else {
 

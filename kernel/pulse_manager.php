@@ -18,21 +18,21 @@ class PULSE
 		// get pulse count and carry globals over if set
 		if (isset($_POST['pulseCount'])){
 
-			self::$COUNT = $_POST['pulseCount'] + 1 ;
+			PULSE::$COUNT = $_POST['pulseCount'] + 1 ;
 		}
 		else{
 
-			self::$COUNT = 1;
+			PULSE::$COUNT = 1;
 		}
 
 		if (isset($_POST['memory'])){
 
-			SYSTEM::$MEMORY = json_decode( $_POST['memory'] );
+			SYSTEM::$MEMORY = json_decode( $_POST['memory'], true );
 		}
 		
 		// get the time window of the pulse
-		self::$BEGIN_TIME = $_SERVER['REQUEST_TIME_FLOAT']*1000;
-		self::$END_TIME = SYSTEM::$PARAMETERS['SERVER_TIMEOUT'] + self::$BEGIN_TIME;
+		PULSE::$BEGIN_TIME = $_SERVER['REQUEST_TIME_FLOAT']*1000;
+		PULSE::$END_TIME = SYSTEM::$PARAMETERS['SERVER_TIMEOUT'] + PULSE::$BEGIN_TIME;
 
 		// Terminate request and close connection to previous pulser if possible
 		if (function_exists("ignore_user_abort")){
@@ -51,10 +51,10 @@ class PULSE
 		$nextPort = "80";
 		$nextIP = "127.0.0.1";
 
-		self::pulseCurl($nextUrl, $nextPort, $nextIP, 
+		PULSE::pulseCurl($nextUrl, $nextPort, $nextIP, 
 			array(
 				"environment"=>SYSTEM::$ENVIRONMENT,
-				"pulseCount"=>self::$COUNT,
+				"pulseCount"=>PULSE::$COUNT,
 				"memory"=>json_encode( SYSTEM::$MEMORY )
 			) );
 		
@@ -62,11 +62,11 @@ class PULSE
 
 	public static function check(){
 
-		// Regular pulse. check time
-		$timeRemaining = self::$END_TIME - ( microtime(true)*1000 );
+		// Regular pulse. check time, false if time's up
+		$timeRemaining = PULSE::$END_TIME - ( microtime(true)*1000 );
 		
-		if( $timeRemaining > 0 && $timeRemaining <= 1 ){
-			// self::pulseEnd();
+		if( $timeRemaining <= 1 ){
+
 			return false;
 		} else {
 			return true;

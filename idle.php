@@ -1,7 +1,7 @@
 <html>
 <head>
 	<title>CloudBot Idle</title>
-
+	<meta charset="UTF-8">
 
 	<style type="text/css">
 		a {

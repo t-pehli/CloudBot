@@ -1,0 +1,21 @@
+{
+  "shutdown": {
+    "path": "shell/commands/system.php",
+    "class": "SHUTDOWN"
+  },
+  "ping": {
+    "path": "shell/commands/system.php",
+    "class": "ping"
+  },
+  "ls": {
+    "path": "shell/commands/filesystem.php",
+    "class": "LS"
+  },
+  "rm": {
+    "path": "shell/commands/filesystem.php",
+    "class": "RM"
+  },
+  "aliases": {
+  	"poweroff":"shutdown"
+  }
+}

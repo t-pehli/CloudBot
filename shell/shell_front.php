@@ -12,6 +12,10 @@
 			cursor: pointer;
 		}
 
+		p {
+			margin: 2px;
+		}
+
 		body {
 			margin: 2px;
 
