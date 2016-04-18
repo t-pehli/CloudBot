@@ -7,7 +7,8 @@ class LS
 {
 	public static function start(){
 
-		IO::printx( "Items in directory: " );
+		IO::printx( "Items in directory: ".SHELL::$PATH );
+		IO::printx( implode( "<br>", scandir( $_SERVER['DOCUMENT_ROOT'].SHELL::$PATH ) ) );
 		SHELL::returnx();	
 	}
 

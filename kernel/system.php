@@ -14,33 +14,7 @@ class SYSTEM
 		SYSTEM::loadConfiguration();
 		SYSTEM::loadStatus();
 
-		function shutdown() {
-		
-			$error = error_get_last();
-			
-			if ($error['type'] === E_ERROR) {
-				// fatal error has occured
-				chdir( "/home/tpehli/Projects/CloudOS/cloudbot/public_html/" );
-
-				SYSTEM::powerOff();
-
-				SYSTEM::logx( "Error: ".$error["message"] );
-				SYSTEM::logx( "File: ".$error["file"]." line: ".$error["line"] );
-
-				if( isset( SYSTEM::$ENVIRONMENT ) && SYSTEM::$ENVIRONMENT == "SHELL" ){
-
-					IO::printx( "Error: ".$error["message"] );
-					IO::printx( "File: ".$error["file"]." line: ".$error["line"] );
-					SHELL::returnx();
-					IO::loop();
-					SYSTEM::$MEMORY['SHELL_STATE'] = "idle";
-				}
-
-				PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
-			}
-		}
-
-		register_shutdown_function('shutdown');
+		SYSTEM::handleShutdown();
 	}
 	// -----------------------------------------------
 
@@ -112,6 +86,33 @@ class SYSTEM
 		}
 	}
 
+	public static function handleShutdown(){
+
+		function shutdown_handler() {
+
+			$error = error_get_last();
+			
+			if ($error['type'] === E_ERROR) {
+				// fatal error has occured
+				chdir( $_SERVER['DOCUMENT_ROOT'] );
+
+				// SYSTEM::powerOff();
+
+				SYSTEM::logx( "Error: ".$error["message"] );
+				SYSTEM::logx( "File: ".$error["file"]." line: ".$error["line"] );
+
+				if( isset( SYSTEM::$ENVIRONMENT ) ){
+
+					$MAIN=SYSTEM::$PARAMETERS['ENVIRONMENTS'][SYSTEM::$ENVIRONMENT]['MAIN_CLASS'];
+					$MAIN::handleShutdown( $error );
+				}
+
+				PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
+			}
+		}
+
+		register_shutdown_function('shutdown_handler');
+	}
 	// -----------------------------------------------
 
 	// ---------- Main Operation Methods -------------

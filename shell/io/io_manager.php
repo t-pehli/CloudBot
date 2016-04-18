@@ -11,16 +11,15 @@ class IO
 	public static function start () {
 
 		IO::$bufferCounter = 0;
-		// file_put_contents("shell/io/output_buffer", "");
-		// file_put_contents("shell/io/input_buffer", "");
 	}
 	// -----------------------------------------------
 
-	// -------- Shell IO Manager Main Loop -----------
-	public static function loop () {
+	// -------- Shell IO Manager Main Loops ----------
+	public static function loopStart () {
 
 		// ===== Input Buffer =====
 		$serialInput = file_get_contents( "shell/io/input_buffer" );
+		// clear external input buffer
 		file_put_contents("shell/io/input_buffer", "");
 		$input = [];
 
@@ -31,9 +30,10 @@ class IO
 			$input = json_decode( $serialInput );
 			IO::$inputBuffer = array_merge( IO::$inputBuffer, $input );
 		}
-		// clear external output buffer
-		// =========================
-		
+	}
+
+	public static function loopEnd() {
+
 		// ===== Output Buffer =====
 		$dump = "";
 		foreach (IO::$outputBuffer as $out) {
@@ -45,9 +45,6 @@ class IO
 		
 		// clear internal output buffer
 		IO::$outputBuffer = [];
-		// =========================
-
-		
 	}
 
 	// -----------------------------------------------

@@ -13,6 +13,7 @@ class SHELL
 		SHELL::$PATH = "/";
 		SYSTEM::$MEMORY['SHELL_STATE'] = SHELL::$STATE;
 		SYSTEM::$MEMORY['SHELL_PATH'] = SHELL::$PATH;
+		SYSTEM::$MEMORY['SHELL_PROGRAM'] = SHELL::$PROGRAM;
 
 		require_once( "shell/io/io_manager.php" );
 		IO::start();
@@ -28,6 +29,68 @@ class SHELL
 
 		SHELL::$STATE = SYSTEM::$MEMORY['SHELL_STATE'];
 		SHELL::$PATH = SYSTEM::$MEMORY['SHELL_PATH'];
+		SHELL::$PROGRAM = SYSTEM::$MEMORY['SHELL_PROGRAM'];
+
+		if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "resume") ){
+
+			$program = SHELL::$PROGRAM;
+			$program::resume();	
+		}
+
+	}
+	// -----------------------------------------------
+
+	// ----------------- Main Loop -------------------
+	public static function loop () {
+
+		IO::loopStart();
+		SYSTEM::logx( SHELL::$STATE );
+
+		if( SHELL::$STATE == "idle" || SHELL::$PROGRAM == "" ){
+
+			$cmd = IO::readx();
+
+			if( $cmd != false ){
+
+				if( SHELL::parse( $cmd ) ){
+
+					SHELL::$STATE = "running";
+
+					$MAIN = SHELL::$PROGRAM;
+					$MAIN::start();
+				}
+				else {
+
+					IO::printx( "No command '".$cmd."' found." );
+					IO::returnx();
+				}
+			}
+		}
+		else {
+
+			$MAIN = SHELL::$PROGRAM;
+			$MAIN::loop();
+		}
+		
+		IO::loopEnd();
+
+	}
+	// -----------------------------------------------
+
+	// ------------------ Pause ----------------------
+	public static function pause () {
+
+		require_once( "shell/io/io_manager.php" );
+
+		SYSTEM::$MEMORY['SHELL_STATE'] = SHELL::$STATE;
+		SYSTEM::$MEMORY['SHELL_PATH'] = SHELL::$PATH;
+		SYSTEM::$MEMORY['SHELL_PROGRAM'] = SHELL::$PROGRAM;
+
+		if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "pause")){
+
+			$program = SHELL::$PROGRAM;
+			$program::pause();	
+		}
 
 	}
 	// -----------------------------------------------
@@ -54,7 +117,7 @@ class SHELL
 
 			if( class_exists( $registry[$program]["class"] )){
 
-				SHELL::$runningClass = $registry[$program]["class"];
+				SHELL::$PROGRAM = $registry[$program]["class"];
 				return true;
 			}
 			else {
@@ -66,51 +129,27 @@ class SHELL
 		}
 	}
 
+	public static function handleShutdown( $error ){
+
+		IO::printx( "Error: ".$error["message"] );
+		IO::printx( "File: ".$error["file"]." line: ".$error["line"] );
+		SHELL::returnx();
+		IO::loopEnd();
+		SYSTEM::$MEMORY['SHELL_STATE'] = "idle";
+		SYSTEM::$MEMORY['SHELL_PROGRAM'] = "";
+		SYSTEM::$MEMORY['SHELL_PATH'] = SHELL::$PATH;
+	}
+
 	public static function returnx () {
 
 		SHELL::$STATE = "idle";
+		SHELL::$PROGRAM = "";
 		IO::returnx();
 	}
 	// -----------------------------------------------
 
-	// ----------------- Main Loop -------------------
-	public static function loop () {
-
-		IO::loop();
-
-		if( SHELL::$STATE == "idle" ){
-
-			$cmd = IO::readx();
-
-			if( $cmd != false ){
-
-				if( SHELL::parse( $cmd ) ){
-
-					SHELL::$STATE = "running";
-
-					$MAIN = SHELL::$runningClass;
-					$MAIN::start();
-				}
-				else {
-
-					IO::printx( "No command '".$cmd."' found." );
-					IO::returnx();
-				}
-			}
-		}
-		else {
-
-			$MAIN = SHELL::$runningClass;
-			$MAIN::loop();
-		}
-		
-		SYSTEM::$MEMORY['SHELL_STATE'] = SHELL::$STATE;
-		SYSTEM::$MEMORY['SHELL_PATH'] = SHELL::$PATH;
-	}
-	// -----------------------------------------------
-
 	public static $STATE;
-	private static $runningClass;
+	public static $PROGRAM;
 
 	public static $PATH;
 	public static $ARGS;

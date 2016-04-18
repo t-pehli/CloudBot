@@ -40,8 +40,13 @@
 			if( PULSE::$COUNT <= 1 ){
 
 				$MAIN::start();
+				SYSTEM::logx("START");
 			}
-			$MAIN::resume();
+
+			if( method_exists( $MAIN, "resume")){
+
+				$MAIN::resume();	
+			}
 
 					
 			while( SYSTEM::$CYCLE != -1 && SYSTEM::$CYCLE<100 ){
@@ -52,7 +57,11 @@
 
 			if( PULSE::$COUNT < 10 ){
 
-				SYSTEM::logx( "PULSE" );
+				if( method_exists( $MAIN, "pause")){
+
+					$MAIN::pause();	
+				}
+				SYSTEM::logx( "PULSE ".PULSE::$COUNT );
 				PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
 			}
 			else{
@@ -91,7 +100,7 @@
 		// TODO show fake front 
 	}
 
-	
+
 
 
 ?>
