@@ -65,7 +65,7 @@ class PULSE
 		// Regular pulse. check time, false if time's up
 		$timeRemaining = PULSE::$END_TIME - ( microtime(true)*1000 );
 		
-		if( $timeRemaining <= 1 ){
+		if( $timeRemaining < 1 ){
 
 			return false;
 		} else {

@@ -28,6 +28,7 @@ class IO
 			
 			$serialInput = '['.substr($serialInput, 2).']';
 			$input = json_decode( $serialInput );
+			SYSTEM::logx($serialInput);
 			IO::$inputBuffer = array_merge( IO::$inputBuffer, $input );
 		}
 	}
@@ -63,6 +64,19 @@ class IO
 		array_push( IO::$outputBuffer, $serialOut );
 	}
 
+	public static function scanx ( $out ){
+		// stringify if not
+		if( !is_string($out) ) {
+			$out = print_r( $out, true );
+		}
+
+		$serialOut = json_encode( 
+			array( "id"=>IO::$bufferCounter, "type"=>"ask", "content"=>$out ) );
+
+		IO::$bufferCounter++;
+		array_push( IO::$outputBuffer, $serialOut );
+	}
+
 	public static function returnx (){
 
 		$serialOut = json_encode( 
@@ -82,6 +96,35 @@ class IO
 
 			return false;
 		}
+	}
+	// -----------------------------------------------
+
+	// ---------- Shell IO Helper Methods ------------
+	public static function yesNo( $input ){
+
+		if( strcasecmp( "yes", $input ) || strcasecmp( "y", $input ) ){
+
+			return 1;
+		}
+		else if( strcasecmp( "no", $input ) || strcasecmp( "n", $input ) ){
+
+			return 0;
+		}
+		else{
+
+			return -1;
+		}
+	}
+
+	public static function is_dir_empty($dir) {
+		if (!is_readable($dir)){
+
+			return NULL; 	
+		}
+		else{
+
+			return ( count( scandir($dir) ) == 2 );	
+		}		
 	}
 	// -----------------------------------------------
 

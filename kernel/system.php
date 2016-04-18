@@ -92,14 +92,15 @@ class SYSTEM
 
 			$error = error_get_last();
 			
-			if ($error['type'] === E_ERROR) {
-				// fatal error has occured
+			if ( $error["type"] > 0 ){
+
 				chdir( $_SERVER['DOCUMENT_ROOT'] );
 
-				// SYSTEM::powerOff();
-
-				SYSTEM::logx( "Error: ".$error["message"] );
+				SYSTEM::logx( "Error ".$error["type"].": ".$error["message"] );
 				SYSTEM::logx( "File: ".$error["file"]." line: ".$error["line"] );
+			}
+			if ( $error['type'] === E_ERROR || $error['type'] === E_PARSE ) {
+				// fatal error has occured
 
 				if( isset( SYSTEM::$ENVIRONMENT ) ){
 

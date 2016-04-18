@@ -40,7 +40,6 @@
 			if( PULSE::$COUNT <= 1 ){
 
 				$MAIN::start();
-				SYSTEM::logx("START");
 			}
 
 			if( method_exists( $MAIN, "resume")){
@@ -49,13 +48,13 @@
 			}
 
 					
-			while( SYSTEM::$CYCLE != -1 && SYSTEM::$CYCLE<100 ){
+			while( SYSTEM::$CYCLE != -1 && SYSTEM::$CYCLE<100 ){ // about 600
 
 				SYSTEM::loop();
 				$MAIN::loop();
 			}
 
-			if( PULSE::$COUNT < 10 ){
+			if( PULSE::$COUNT < 15 ){
 
 				if( method_exists( $MAIN, "pause")){
 
@@ -66,6 +65,11 @@
 			}
 			else{
 
+
+				if( method_exists( $MAIN, "stop")){
+
+					$MAIN::stop();	
+				}
 				SYSTEM::powerOff();
 			}
 

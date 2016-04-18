@@ -81,10 +81,10 @@ var STM = {
 
 						this.state = "idle";
 					}
-					else if( i<eventContent.length && eventContent[i].type == "query" ){
-						// check if a scanx query is left, block
+					else if( i<eventContent.length && eventContent[i].type == "ask" ){
+						// check if a scanx ask is left, block
 
-						$("#path").text( eventContent.content +">" );
+						$("#path").text( eventContent[i].content +">" );
 						clearTimeout(timeout);
 
 						this.state = "blocked";
@@ -98,7 +98,7 @@ var STM = {
 					
 					$("#path").text( lastPath +">" );
 					this.state = "idle";
-					clearTimeout(timeout);
+					clearTimeout( timeout );
 					sendInterrupt( eventContent );
 				}
 				break;
@@ -109,12 +109,14 @@ var STM = {
 					$("#path").text("");
 					this.state = "running";
 					longpoll( $("#cmd").val() );
+					$("#cmd").val("");
 				}
 				else if( eventType == "interrupt" ){
+
 					
 					$("#path").text( lastPath +">" );
 					this.state = "idle";
-					clearTimeout(timeout);
+					clearTimeout( timeout );
 					sendInterrupt( eventContent );
 				}
 				break;
@@ -136,7 +138,7 @@ function sendInterrupt( msg ){
 		url: "/shell/io/buffer_manager.php",
 		type: 'POST',
 		dataType: 'JSON',
-		data: { interrupt: msg }
+		data: { data: JSON.stringify( "interrupt "+msg ) }
 	});
 }
 
@@ -192,7 +194,7 @@ $(document).keypress(function(e) {
 
 		STM.stateEvent( "keypress", "enter" );
 	}
-	else if(e.which == 27) {
+	else if(e.which == 0) {
 
 		STM.stateEvent( "interrupt", "Interrupted by user." );
 	}

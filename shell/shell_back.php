@@ -18,7 +18,6 @@ class SHELL
 		require_once( "shell/io/io_manager.php" );
 		IO::start();
 		IO::printx( "CloudOS online..." );
-		// IO::returnx();	
 	}
 	// -----------------------------------------------
 
@@ -31,10 +30,31 @@ class SHELL
 		SHELL::$PATH = SYSTEM::$MEMORY['SHELL_PATH'];
 		SHELL::$PROGRAM = SYSTEM::$MEMORY['SHELL_PROGRAM'];
 
+		if( SHELL::$STATE == "running" ){
+
+
+			$registry = json_decode( file_get_contents("shell/registry.json"), true);
+			$programArray = array_filter(
+				$registry,
+				function ($e) {
+					if( array_key_exists( "class", $e ) ){
+
+						return $e["class"] == SHELL::$PROGRAM;	
+					}
+					else{
+
+						return false;
+					}					
+				}
+			);
+			$program = array_shift( $programArray );
+			include_once( $program['path'] );
+		}
+
 		if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "resume") ){
 
-			$program = SHELL::$PROGRAM;
-			$program::resume();	
+			$programClass = SHELL::$PROGRAM;
+			$programClass::resume();	
 		}
 
 	}
@@ -44,7 +64,6 @@ class SHELL
 	public static function loop () {
 
 		IO::loopStart();
-		SYSTEM::logx( SHELL::$STATE );
 
 		if( SHELL::$STATE == "idle" || SHELL::$PROGRAM == "" ){
 
@@ -56,8 +75,15 @@ class SHELL
 
 					SHELL::$STATE = "running";
 
-					$MAIN = SHELL::$PROGRAM;
-					$MAIN::start();
+					$programClass = SHELL::$PROGRAM;
+					if( method_exists( $programClass, "start")){
+					
+						$programClass::start();
+					}
+					if( method_exists( $programClass, "resume")){
+					
+						$programClass::resume();
+					}
 				}
 				else {
 
@@ -68,8 +94,32 @@ class SHELL
 		}
 		else {
 
-			$MAIN = SHELL::$PROGRAM;
-			$MAIN::loop();
+			$cmd = IO::readx();
+
+			if( $cmd != false ){
+
+				$runningArgs = explode(' ',trim($cmd));
+
+				if( $runningArgs[0] = "interrrupt" ){
+
+					if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "stop")){
+
+						$programClass = SHELL::$PROGRAM;
+						$programClass::stop();	
+					}
+					IO::loopEnd();
+
+					SHELL::$STATE = "idle";
+					SHELL::$PROGRAM = "";
+					SHELL::returnx();
+				}
+			}
+			else{
+
+				$programClass = SHELL::$PROGRAM;
+				$programClass::loop();
+			}
+
 		}
 		
 		IO::loopEnd();
@@ -80,18 +130,16 @@ class SHELL
 	// ------------------ Pause ----------------------
 	public static function pause () {
 
-		require_once( "shell/io/io_manager.php" );
+		if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "pause")){
+
+			$programClass = SHELL::$PROGRAM;
+			$programClass::pause();	
+		}
+		IO::loopEnd();
 
 		SYSTEM::$MEMORY['SHELL_STATE'] = SHELL::$STATE;
 		SYSTEM::$MEMORY['SHELL_PATH'] = SHELL::$PATH;
 		SYSTEM::$MEMORY['SHELL_PROGRAM'] = SHELL::$PROGRAM;
-
-		if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "pause")){
-
-			$program = SHELL::$PROGRAM;
-			$program::pause();	
-		}
-
 	}
 	// -----------------------------------------------
 
@@ -104,25 +152,25 @@ class SHELL
 
 		if( array_key_exists( SHELL::$ARGS[0], $registry['aliases'] ) ){
 
-			$program = $registry['aliases'][SHELL::$ARGS[0]];
+			$programName = $registry['aliases'][SHELL::$ARGS[0]];
 		}
 		else {
 
-			$program = SHELL::$ARGS[0];
+			$programName = SHELL::$ARGS[0];
 		}
 
-		if( array_key_exists( $program, $registry ) ){
+		if( array_key_exists( $programName, $registry ) ){
 
-			include_once( $registry[$program]["path"] );
+			include_once( $registry[$programName]["path"] );
 
-			if( class_exists( $registry[$program]["class"] )){
+			if( class_exists( $registry[$programName]["class"] )){
 
-				SHELL::$PROGRAM = $registry[$program]["class"];
+				SHELL::$PROGRAM = $registry[$programName]["class"];
 				return true;
 			}
 			else {
 
-				IO::printx( "Error in file ".$registry[$program]["path"] );
+				IO::printx( "Error in file ".$registry[$programName]["path"] );
 				IO::returnx();
 				return false;
 			}
@@ -131,7 +179,7 @@ class SHELL
 
 	public static function handleShutdown( $error ){
 
-		IO::printx( "Error: ".$error["message"] );
+		IO::printx( "Error".$error["type"].": ".$error["message"] );
 		IO::printx( "File: ".$error["file"]." line: ".$error["line"] );
 		SHELL::returnx();
 		IO::loopEnd();

@@ -27,14 +27,11 @@ class PING
 			SYSTEM::$STATUS['CONNECTION'] = "ON";
 			SYSTEM::saveStatus();
 
-			file_put_contents("shell/io/output_buffer", "");
-			file_put_contents("shell/io/input_buffer", "");
-
 			SHELL::returnx();	
 		}
 		else if ( count( SHELL::$ARGS ) >1 ){
 
-			IO::printx( "Usage: ping [-s]");
+			IO::printx( "Usage: ".SHELL::$ARGS[0]." [-s]");
 			SHELL::returnx();
 		}
 		else{

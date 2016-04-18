@@ -15,6 +15,10 @@
     "path": "shell/commands/filesystem.php",
     "class": "RM"
   },
+  "test": {
+    "path": "shell/commands/shell_actions.php",
+    "class": "TEST"
+  },
   "aliases": {
   	"poweroff":"shutdown"
   }
