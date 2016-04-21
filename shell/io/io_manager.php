@@ -28,7 +28,6 @@ class IO
 			
 			$serialInput = '['.substr($serialInput, 2).']';
 			$input = json_decode( $serialInput );
-			SYSTEM::logx($serialInput);
 			IO::$inputBuffer = array_merge( IO::$inputBuffer, $input );
 		}
 	}
@@ -77,15 +76,6 @@ class IO
 		array_push( IO::$outputBuffer, $serialOut );
 	}
 
-	public static function returnx (){
-
-		$serialOut = json_encode( 
-			array( "id"=>IO::$bufferCounter, "type"=>"path", "content"=>SHELL::$PATH ) );
-
-		IO::$bufferCounter++;
-		array_push( IO::$outputBuffer, $serialOut );
-	}
-
 	public static function readx (){
 
 		if( !empty( IO::$inputBuffer ) ){
@@ -96,17 +86,65 @@ class IO
 
 			return false;
 		}
+	}	
+
+	public static function replyx ( $reply=null ){
+
+		if( is_null( $reply ) ){
+
+			$result = IO::$replyBuffer;
+			IO::$replyBuffer = null;
+			return $result;
+		}
+		else {
+
+			IO::$replyBuffer = $reply;
+		}
+	}
+
+	public static function autox ( $out="" ){
+
+		$serialOut = json_encode( 
+			array( "id"=>IO::$bufferCounter, "type"=>"auto", "content"=>$out ) );
+
+		IO::$bufferCounter++;
+		array_push( IO::$outputBuffer, $serialOut );
+	}
+
+	public static function returnx (){
+
+		$serialOut = json_encode( 
+			array( "id"=>IO::$bufferCounter, "type"=>"path", "content"=>SHELL::$PATH ) );
+
+		IO::$bufferCounter++;
+		array_push( IO::$outputBuffer, $serialOut );
+	}
+
+	public static function setx ( $prop, $value ){
+		// stringify if not
+		if( !is_string($prop) ) {
+			$prop = print_r( $prop, true );
+		}
+		if( !is_string($value) ) {
+			$value = print_r( $value, true );
+		}
+
+		$serialOut = json_encode( 
+			array( "id"=>IO::$bufferCounter, "type"=>"ping", "content"=>"set ".$prop." ".$value ));
+
+		IO::$bufferCounter++;
+		array_push( IO::$outputBuffer, $serialOut );
 	}
 	// -----------------------------------------------
 
 	// ---------- Shell IO Helper Methods ------------
 	public static function yesNo( $input ){
 
-		if( strcasecmp( "yes", $input ) || strcasecmp( "y", $input ) ){
+		if( stripos( "yes", $input ) !== false || stripos( "y", $input ) !== false ){
 
 			return 1;
 		}
-		else if( strcasecmp( "no", $input ) || strcasecmp( "n", $input ) ){
+		if( stripos( "no", $input ) !== false || stripos( "n", $input ) !== false ){
 
 			return 0;
 		}
@@ -130,6 +168,7 @@ class IO
 
 	private static $inputBuffer = [];	// internal
 	private static $outputBuffer = [];	// internal
+	private static $replyBuffer;
 
 	private static $bufferCounter;
 

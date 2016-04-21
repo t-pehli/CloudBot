@@ -3,7 +3,7 @@
 */
 
 // ----------- Constants & Globals ---------------
-var waitTime = 1000;
+var IO_CLOCK = 1000;
 // var errorTime = 5000;
 
 
@@ -42,6 +42,36 @@ var STM = {
 						$("#cmd").val("");
 					}
 				}
+				else if( eventType == "keypress" && eventContent == "tab"  ){
+
+					if( $("#cmd").val() != "" ){
+
+						longpoll( "autocomplete "+$("#cmd").val() );
+					}
+				}
+				else if( eventType == "poll" ){
+
+					var i=0;
+					var i=0;
+					while( i<eventContent.length && eventContent[i].type == "msg" ){
+						// run though incoming printx msgs 
+
+						var mainDiv = $("#main");
+						mainDiv.append( "<p>"+eventContent[i].content+"</p>" );
+						mainDiv.scrollTop( mainDiv.prop("scrollHeight") );
+						$("#cmd").focus();
+						i++;
+					}
+
+					if( i<eventContent.length && eventContent[i].type == "auto" ){
+					
+						if( eventContent[i].content !== "" ){
+
+							$("#cmd").val( eventContent[i].content );
+						}
+						clearTimeout(timeout);
+					}
+				}
 				break;
 			// ===================================
 			case "running":
@@ -70,13 +100,24 @@ var STM = {
 					else if( i<eventContent.length && eventContent[i].type == "ping" ){
 						// got a ping back, (re)start session
 
-						// var mainDiv = $("#main");
-						// mainDiv.append( "<p>Connected to CloudOS</p>" );
-
 						$("#path").text( lastPath +">" );
-						var mainDiv = $("#main");
-						mainDiv.append( "<p>"+eventContent[i].content+"</p>" );
-						mainDiv.scrollTop( mainDiv.prop("scrollHeight") );
+
+						if( eventContent[i].content.substring(0, 3) == "set" ){
+
+							var setArgs = eventContent[i].content.split(" "); // 0 = set
+							
+							if( setArgs[1] == "IO_CLOCK" ){
+								
+								IO_CLOCK = parseInt( setArgs[2] );
+							}
+						}
+						else{
+
+							var mainDiv = $("#main");
+							mainDiv.append( "<p>"+eventContent[i].content+"</p>" );
+							mainDiv.scrollTop( mainDiv.prop("scrollHeight") );
+						}
+						
 						clearTimeout(timeout);
 
 						this.state = "idle";
@@ -97,27 +138,32 @@ var STM = {
 				else if( eventType == "interrupt" ){
 					
 					$("#path").text( lastPath +">" );
-					this.state = "idle";
+					this.state = "running";
 					clearTimeout( timeout );
-					sendInterrupt( eventContent );
+					longpoll( "interrupt " + eventContent );
+					$("#cmd").val("");
 				}
 				break;
 			// ===================================
 			case "blocked":
 				if( eventType == "keypress" && eventContent == "enter" ){
 					
-					$("#path").text("");
-					this.state = "running";
-					longpoll( $("#cmd").val() );
-					$("#cmd").val("");
+					if( $("#cmd").val() != "" ){
+						
+						$("#path").text("");
+						this.state = "running";
+						longpoll( $("#cmd").val() );
+						$("#cmd").val("");
+					}
 				}
 				else if( eventType == "interrupt" ){
 
 					
 					$("#path").text( lastPath +">" );
-					this.state = "idle";
+					this.state = "running";
 					clearTimeout( timeout );
-					sendInterrupt( eventContent );
+					longpoll( "interrupt " + eventContent );
+					$("#cmd").val("");
 				}
 				break;
 			// ===================================
@@ -127,28 +173,13 @@ var STM = {
 // -----------------------------------------------
 
 // ------------- Helper Functions ----------------
-function sendInterrupt( msg ){
-
-	var mainDiv = $("#main");
-	mainDiv.append( "<p>Interrupted: "+msg+"</p>" );
-	mainDiv.scrollTop( mainDiv.prop("scrollHeight") );
-	$("#cmd").focus();
-	
-	jQuery.ajax({
-		url: "/shell/io/buffer_manager.php",
-		type: 'POST',
-		dataType: 'JSON',
-		data: { data: JSON.stringify( "interrupt "+msg ) }
-	});
-}
-
 function longpoll( postData ){
 	// perform longpoll
 
 	var onSuccess = function(response){
 
 		clearTimeout(timeout);
-		timeout = setTimeout( function(){ longpoll(); }, waitTime);
+		timeout = setTimeout( function(){ longpoll(); }, IO_CLOCK);
 
 		STM.stateEvent( "poll", response );		
 	}
@@ -159,28 +190,19 @@ function longpoll( postData ){
 	}
 
 
-	if (typeof postData == 'undefined'){
+	if (typeof postData != 'undefined'){
 		
-		jQuery.ajax({
-			url: "/shell/io/buffer_manager.php",
-			type: 'POST',
-			dataType: 'JSON',
-			data: { data: postData },
-			success: onSuccess,
-			error: onFail
-		});
+		postData = JSON.stringify( postData );
 	}
-	else {
 		
-		jQuery.ajax({
-			url: "/shell/io/buffer_manager.php",
-			type: 'POST',
-			dataType: 'JSON',
-			data: { data: JSON.stringify( postData ) },
-			success: onSuccess,
-			error: onFail
-		});
-	}
+	jQuery.ajax({
+		url: "/shell/io/buffer_manager.php",
+		type: 'POST',
+		dataType: 'JSON',
+		data: { data: postData },
+		success: onSuccess,
+		error: onFail
+	});
 
 }
 // -----------------------------------------------
@@ -188,15 +210,23 @@ function longpoll( postData ){
 
 // ------------------ Events ---------------------
 $(document).keypress(function(e) {
-	// Enter pressed, push command to buffer
 
 	if(e.which == 13) {
+	// Enter pressed, push command to buffer
 
 		STM.stateEvent( "keypress", "enter" );
 	}
-	else if(e.which == 0) {
+	else if(e.which == 0 && e.keyCode == 27) {
+	// Esc pressed, send interrupt
 
+		e.preventDefault();
 		STM.stateEvent( "interrupt", "Interrupted by user." );
+	}
+	else if(e.which == 0 && e.keyCode == 9) {
+	// Tab pressed, autocomplete
+
+		e.preventDefault();
+		STM.stateEvent( "keypress", "tab" );
 	}
 });
 

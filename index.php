@@ -5,8 +5,8 @@
 	header("Pragma: no-cache");
 
 	if( isset($_GET['access']) ){
+	// incoming directive from user or other cloudbot
 
-		// incoming connection from user or other cloudbot
 		if( $_GET['access'] == 'directive' ){
 
 			require('kernel/system.php');
@@ -24,8 +24,8 @@
 
 		
 		else if( $_GET['access'] == 'pulse' ){
-			// incoming pulse
-
+			
+			// ========== Load System ===========
 			require('kernel/system.php');
 			SYSTEM::loadEnvironment();
 
@@ -37,24 +37,28 @@
 			require( SYSTEM::$PARAMETERS['ENVIRONMENTS'][SYSTEM::$ENVIRONMENT]['LOCATION_BACK'] );
 			$MAIN = SYSTEM::$PARAMETERS['ENVIRONMENTS'][SYSTEM::$ENVIRONMENT]['MAIN_CLASS'];
 
+
+			// ============= Start ==============
 			if( PULSE::$COUNT <= 1 ){
 
 				$MAIN::start();
 			}
 
+			// ============= Resume =============
 			if( method_exists( $MAIN, "resume")){
 
 				$MAIN::resume();	
 			}
-
-					
-			while( SYSTEM::$CYCLE != -1 && SYSTEM::$CYCLE<100 ){ // about 600
+			
+			// ============= Loop ===============
+			while( SYSTEM::$CYCLE != -1 && SYSTEM::$CYCLE<100 ){ // about 600 cycles without limit
 
 				SYSTEM::loop();
 				$MAIN::loop();
 			}
 
-			if( PULSE::$COUNT < 15 ){
+			// ========= Pause & Pulse ==========
+			if( SYSTEM::$STATUS['POWER'] == "ON" ){
 
 				if( method_exists( $MAIN, "pause")){
 
@@ -65,14 +69,13 @@
 			}
 			else{
 
-
+			// ============= Stop ==============
 				if( method_exists( $MAIN, "stop")){
 
 					$MAIN::stop();	
 				}
-				SYSTEM::powerOff();
 			}
-
+			// ==================================
 
 		} else if ( $_GET['access'] == 'client' ){
 			// user connected

@@ -8,8 +8,34 @@ class SHUTDOWN
 	public static function start(){
 
 		IO::printx( "Shutting down..." );
-		SHELL::returnx();	
+		SHELL::returnx();
 		SYSTEM::powerOff();
+	}
+
+}
+
+/**
+* 
+*/
+class RESTART
+{
+	public static function start(){
+
+		IO::printx( "Restarting..." );
+		
+		PULSE::$COUNT = 0;
+		SYSTEM::$CYCLE = -1;
+		SYSTEM::$STATUS['POWER'] = "RESTART";
+		SYSTEM::saveStatus();
+		SHELL::$PATH = "/";
+		SHELL::pause();
+		
+		PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
+	}
+
+	public static function resume(){
+
+		SHELL::returnx();
 	}
 
 }
@@ -26,6 +52,8 @@ class PING
 
 			SYSTEM::$STATUS['CONNECTION'] = "ON";
 			SYSTEM::saveStatus();
+
+			IO::setx( "IO_CLOCK", SYSTEM::$PARAMETERS['IO_CLOCK'] );
 
 			SHELL::returnx();	
 		}

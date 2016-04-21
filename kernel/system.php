@@ -14,10 +14,95 @@ class SYSTEM
 		SYSTEM::loadConfiguration();
 		SYSTEM::loadStatus();
 
+		if( SYSTEM::$STATUS['POWER'] == "RESTART" ){
+		
+			SYSTEM::$STATUS['POWER'] = "ON";
+			SYSTEM::saveStatus();
+		}
+
 		SYSTEM::handleShutdown();
 	}
 	// -----------------------------------------------
 
+
+	// ---------- Main Operation Methods -------------
+	public static function loop(){
+
+		if( !PULSE::check() ){
+
+			SYSTEM::$CYCLE = -1;
+		}
+		else {
+
+			SYSTEM::$CYCLE++;
+			usleep( 20000 );
+		}
+
+		
+		if( PULSE::$COUNT > 150 ){ //TODO remove debug mode
+
+			SYSTEM::$CYCLE = -1;
+			SYSTEM::powerOff();
+		}
+		
+	}
+
+	public static function runDirective( $directive ){
+		
+		if( strcasecmp( $directive, "STATUS") == 0 ){
+
+			echo json_encode( SYSTEM::$STATUS );
+		}
+		else if( strcasecmp( $directive, "START") == 0 ){
+
+			SYSTEM::powerOn();
+		}
+		else if( strcasecmp( $directive, "STOP") == 0 ){
+
+			SYSTEM::powerOff();
+			echo json_encode( SYSTEM::$STATUS );
+		}
+		
+	}
+
+
+	public static function powerOn(){
+
+			SYSTEM::logx( "CLEAR_LOG" );
+
+		if( SYSTEM::$STATUS['POWER'] != "ON" ){
+
+			SYSTEM::$STATUS['POWER'] = "ON";
+			SYSTEM::$STATUS['CONNECTION'] = "OFF";
+			SYSTEM::saveStatus();
+
+			require( SYSTEM::$PARAMETERS['ENVIRONMENTS'][SYSTEM::$ENVIRONMENT]['LOCATION_FRONT'] );
+			
+			require( "kernel/pulse_manager.php" );
+			PULSE::$COUNT = 0;
+			PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
+		}
+		else {
+
+			SYSTEM::logx( "Already online!" );
+		}
+	}
+
+	public static function powerOff(){
+
+		if( SYSTEM::$STATUS['POWER'] != "OFF" ){
+
+			SYSTEM::$STATUS = [];
+			SYSTEM::$STATUS['POWER'] = "OFF";
+			SYSTEM::$STATUS['CONNECTION'] = "OFF";
+			SYSTEM::saveStatus();
+		}
+		else {
+
+			SYSTEM::logx( "Already offline!" );
+		}
+	}
+	// -----------------------------------------------
 
 
 	// -------------- Helper Methods -----------------
@@ -108,83 +193,13 @@ class SYSTEM
 					$MAIN::handleShutdown( $error );
 				}
 
+				SYSTEM::$STATUS['POWER'] = "RESTART";
+				SYSTEM::saveStatus();
 				PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
 			}
 		}
 
 		register_shutdown_function('shutdown_handler');
-	}
-	// -----------------------------------------------
-
-	// ---------- Main Operation Methods -------------
-	public static function loop(){
-
-		if( !PULSE::check() ){
-
-			SYSTEM::$CYCLE = -1;
-		}
-		else {
-
-			SYSTEM::$CYCLE++;
-			usleep( 20000 );
-		}
-		
-	}
-
-	public static function runDirective( $directive ){
-		
-		if( strcasecmp( $directive, "STATUS") == 0 ){
-
-			echo json_encode( SYSTEM::$STATUS );
-		}
-		else if( strcasecmp( $directive, "START") == 0 ){
-
-			SYSTEM::powerOn();
-		}
-		else if( strcasecmp( $directive, "STOP") == 0 ){
-
-			SYSTEM::powerOff();
-			echo json_encode( SYSTEM::$STATUS );
-		}
-		
-	}
-
-
-	public static function powerOn(){
-
-			SYSTEM::logx( "CLEAR_LOG" );
-
-		if( SYSTEM::$STATUS['POWER'] != "ON" ){
-
-			SYSTEM::$STATUS['POWER'] = "ON";
-			SYSTEM::$STATUS['CONNECTION'] = "OFF";
-			SYSTEM::saveStatus();
-
-			require( SYSTEM::$PARAMETERS['ENVIRONMENTS'][SYSTEM::$ENVIRONMENT]['LOCATION_FRONT'] );
-			
-			require( "kernel/pulse_manager.php" );
-			PULSE::$COUNT = 0;
-			PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
-		}
-		else {
-
-			SYSTEM::logx( "Already online!" );
-		}
-	}
-
-	public static function powerOff(){
-
-		if( SYSTEM::$STATUS['POWER'] != "OFF" ){
-
-			SYSTEM::$STATUS = [];
-			SYSTEM::$STATUS['POWER'] = "OFF";
-			SYSTEM::$STATUS['CONNECTION'] = "OFF";
-			SYSTEM::saveStatus();
-		}
-		else {
-
-			SYSTEM::logx( "Already offline!" );
-		}
 	}
 	// -----------------------------------------------
 

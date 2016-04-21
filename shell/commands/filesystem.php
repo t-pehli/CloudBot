@@ -9,52 +9,71 @@ class LS
 {
 	public static function start(){
 
-		function cmp ( $a, $b ){
+		if( !function_exists( "cmp" ) ){
 
-			if( substr( $a, 0, 1 ) == "/" && substr( $b, 0, 1 ) == "/" ){
-			
-				return strcasecmp ( $a , $b );
-			}
-			else if( substr( $a, 0, 1 ) == "/" && substr( $b, 0, 1 ) != "/" ){
+			function cmp ( $a, $b ){
 
-				return -1;
-			}
-			else if( substr( $a, 0, 1 ) != "/" && substr( $b, 0, 1 ) == "/" ){
-
-				return 1;
-			}
-			else{
-
-				return strcasecmp ( $a , $b );
-			}
-		}
-
-		if( count( SHELL::$ARGS ) > 1 && SHELL::$ARGS[1] == "-a" ){
-
-			$items = scandir( $_SERVER['DOCUMENT_ROOT'].SHELL::$PATH );
-			foreach ($items as $key => $item) {
+				if( substr( $a, 0, 1 ) == "/" && substr( $b, 0, 1 ) == "/" ){
 				
-				if( is_dir( $item ) ){
+					return strcasecmp ( $a , $b );
+				}
+				else if( substr( $a, 0, 1 ) == "/" && substr( $b, 0, 1 ) != "/" ){
 
-					$items[$key] = "/".$item;
+					return -1;
+				}
+				else if( substr( $a, 0, 1 ) != "/" && substr( $b, 0, 1 ) == "/" ){
+
+					return 1;
+				}
+				else{
+
+					return strcasecmp ( $a , $b );
 				}
 			}
-			usort( $items, "cmp" );
-			IO::printx( "Items in directory: ".SHELL::$PATH );
-			IO::printx( implode( "        ", $items ) );
-			SHELL::returnx();
-		}
-		else if ( count( SHELL::$ARGS ) > 1 ){
+		}		
 
-			IO::printx( "Usage: ".SHELL::$ARGS[0]." [-a]");
-			SHELL::returnx();
-		}
-		else{
+		$hiddenFlag = false;
+		if( count( SHELL::$ARGS ) > 1 && in_array( "-a", SHELL::$ARGS ) ){
 
-			$items = scandir( $_SERVER['DOCUMENT_ROOT'].SHELL::$PATH );
+			if( ( $key = array_search( "-a", SHELL::$ARGS ) ) !== false ) {
+				array_splice( SHELL::$ARGS, $key, 1 );
+			}
+
+			$hiddenFlag = true;
+		}
+
+		$path = false;
+
+		if( count( SHELL::$ARGS ) == 1 ){
+
+			$path = $_SERVER['DOCUMENT_ROOT'].SHELL::$PATH;
+		}
+		else if( count( SHELL::$ARGS ) == 2 && substr( SHELL::$ARGS[1] , 0, 1) == "/" ){
+
+			$path = $_SERVER['DOCUMENT_ROOT'].SHELL::$ARGS[1];
+			if ( !is_dir( $path ) ){
+
+				IO::printx( SHELL::$ARGS[1]." is not a directory" );
+				$path = false;
+			}
+		}
+		else if ( count( SHELL::$ARGS ) == 2 && substr( SHELL::$ARGS[1] , 0, 1) != "/" ){
+
+			$path = $_SERVER['DOCUMENT_ROOT'].SHELL::$PATH.SHELL::$ARGS[1];
+			if ( !is_dir( $path ) ){
+
+				IO::printx( SHELL::$ARGS[1]." is not a directory" );
+				$path = false;
+			}
+		}
+
+
+		if ( $path !== false ){
+
+			$items = scandir( $path );
 			foreach ($items as $key => $item) {
 				
-				if( substr( $item, 0, 1 ) == "." ){
+				if( !$hiddenFlag && substr( $item, 0, 1 ) == "." ){
 
 					unset( $items[$key] );
 				}
@@ -64,8 +83,15 @@ class LS
 				}
 			}
 			usort( $items, "cmp" );
-			IO::printx( "Items in directory: ".SHELL::$PATH );
+			IO::printx( "Items in directory: ".
+				preg_replace( '!^'.$_SERVER['DOCUMENT_ROOT'].'!s', '', $path ) );
+
 			IO::printx( implode( "        ", $items ) );
+			SHELL::returnx();
+		}
+		else {
+
+			IO::printx( "Usage: ".SHELL::$ARGS[0]." [-a] [&lt;directory&gt;]");
 			SHELL::returnx();
 		}
 	}
@@ -73,6 +99,41 @@ class LS
 }
 
 
+/**
+* 
+*/
+class MKDIR
+{
+	public static function start(){
+
+		if( count( SHELL::$ARGS ) > 1 ){
+
+			if( substr( SHELL::$ARGS[1] , 0, 1) == "/" ){
+
+				$path = SHELL::$ARGS[1];
+			}
+			else{
+
+				$path = ltrim( SHELL::$PATH."/".SHELL::$ARGS[1], "/" );
+			}
+
+			if( mkdir( ltrim( $path, "/" ) ) ){
+
+				IO::printx( "Directory: ".SHELL::$ARGS[1]." created succesfully!" );
+			}
+			else{
+
+				IO::printx( "Error while creating directory: ".SHELL::$ARGS[1] );
+			}
+			SHELL::returnx();
+		}
+		else {
+			
+			IO::printx( "Usage: ".SHELL::$ARGS[0]." &lt;directory&gt;");
+			SHELL::returnx();
+		}
+	}
+}
 
 
 /**
@@ -82,33 +143,49 @@ class RM
 {
 	public static function start(){
 
-		if( count( SHELL::$ARGS ) > 1 ){
+		if( count( SHELL::$ARGS ) > 1 && in_array( "-y", SHELL::$ARGS ) ){
+			// force delete
+			if( ( $key = array_search( "-y", SHELL::$ARGS ) ) !== false ) {
+				array_splice( SHELL::$ARGS, $key, 1 );
+			}
 
-			if( file_exists( SHELL::$ARGS[1] ) ){
+			RM::deleteFileDir( SHELL::$ARGS[1] );
+			SHELL::returnx();
+		}
+		else if( count( SHELL::$ARGS ) > 1 ) {
+			//prompt for deletion
 
-				if( is_file( SHELL::$ARGS[1] ) ){
+			if( substr( SHELL::$ARGS[1] , 0, 1) == "/" ){
 
-					SYSTEM::$MEMORY['rm_file'] = SHELL::$ARGS[1];
-					IO::scanx("Are you sure you want to delete file: \""
-						.SHELL::$ARGS[1]."\" ?[Y/N]");
-				}
-				else if ( is_dir( SHELL::$ARGS[1] ) ){
+				$path = ltrim( SHELL::$ARGS[1], "/" );
+			}
+			else{
 
-					SYSTEM::$MEMORY['rm_file'] = SHELL::$ARGS[1];
-					IO::scanx("Are you sure you want to delete directory: \""
-						.SHELL::$ARGS[1]."\" ?[Y/N]");
-				}
+				$path = ltrim( SHELL::$PATH."/".SHELL::$ARGS[1], "/" );
+			}
+
+			if( file_exists( $path ) && is_file( $path ) ){
+
+				SYSTEM::$MEMORY['rm_file'] = $path;
+				IO::scanx("Are you sure you want to delete file: \""
+					.SHELL::$ARGS[1]."\" ?[Y/N]");
+			}
+			else if ( file_exists( $path ) && is_dir( $path ) ){
+
+				SYSTEM::$MEMORY['rm_file'] = $path;
+				IO::scanx("Are you sure you want to delete directory: \""
+					.SHELL::$ARGS[1]."\" ?[Y/N]");
 			}
 			else {
 
-				IO::printx( SHELL::$ARGS[1]." is not a file or directory!" );
+				IO::printx( $path." is not a file or directory!" );
 				SHELL::returnx();
 			}
 			
 		}
 		else {
-
-			IO::printx( "Usage: ".SHELL::$ARGS[0]." <file/directory>");
+			
+			IO::printx( "Usage: ".SHELL::$ARGS[0]." &lt;file/directory&gt;");
 			SHELL::returnx();
 		}
 
@@ -118,37 +195,15 @@ class RM
 
 		if( isset( SYSTEM::$MEMORY['rm_file'] ) && SYSTEM::$MEMORY['rm_file'] != "" ){
 
-			$reply = IO::readx();
+			$reply = IO::replyx();
 
 			if( $reply && IO::yesNo( $reply ) == 1 ){
 
-				if( is_file( SYSTEM::$MEMORY['rm_file'] ) ){
-					
-					unlink( SYSTEM::$MEMORY['rm_file'] );
-					IO::printx( "File deleted!" );
-				}
-				else if ( is_dir( SYSTEM::$MEMORY['rm_file'] ) 
-					&& IO::is_dir_empty( SYSTEM::$MEMORY['rm_file'] ) ){
-
-					if( rmdir( SYSTEM::$MEMORY['rm_file'] ) ){}
-				}
-				else {
-
-					RM::deleteDir( SYSTEM::$MEMORY['rm_file'] );
-				}
-
-				if( !file_exists( SYSTEM::$MEMORY['rm_file'] ) ){
-
-					IO::printx( "Deleted successfully!" );
-				}
-				else {
-
-					IO::printx( "Error while deleting..." );
-				}
+				RM::deleteFileDir( SYSTEM::$MEMORY['rm_file'] );
 				SYSTEM::$MEMORY['rm_file'] = "";
-				SHELL::returnx();		
+				SHELL::returnx();
 			}
-			else if( $reply && IO::yesNo( $reply ) == 0 ){
+			else if( $reply && IO::yesNo( $reply ) != 1 ){
 
 				SYSTEM::$MEMORY['rm_file'] = "";
 				SHELL::returnx();		
@@ -161,8 +216,30 @@ class RM
 		}
 	}
 
-	// -------------- Helper Method -------------
-	public static function deleteDir($dirPath) {
+	// ------------- Helper Methods -------------
+	public static function deleteFileDir( $name ) {
+
+		if( is_file( $name ) && unlink( $name ) ){
+			
+			IO::printx( "File deleted!" );
+		}
+		else if ( is_dir( $name ) && IO::is_dir_empty( $name ) && rmdir( $name ) ){
+
+			IO::printx( "Directory deleted!" );
+		}
+		else if( is_dir( $name ) && RM::deleteDir( $name ) ){
+
+			IO::printx( "Directory deleted!" );
+		}
+		else {
+
+			rmdir( $name );
+			IO::printx( "Error while deleting..." );
+		}
+	}
+
+
+	public static function deleteDir( $dirPath ) {
 
 		if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') {
 			
@@ -179,7 +256,7 @@ class RM
 				unlink($file);
 			}
 		}
-		rmdir($dirPath);
+		return rmdir($dirPath);
 	}
 }
 

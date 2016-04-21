@@ -3,17 +3,35 @@
     "path": "shell/commands/system.php",
     "class": "SHUTDOWN"
   },
+  "restart": {
+    "path": "shell/commands/system.php",
+    "class": "RESTART"
+  },
   "ping": {
     "path": "shell/commands/system.php",
-    "class": "ping"
+    "class": "PING"
   },
+
   "ls": {
     "path": "shell/commands/filesystem.php",
     "class": "LS"
   },
+  "mkdir": {
+    "path": "shell/commands/filesystem.php",
+    "class": "MKDIR"
+  },
   "rm": {
     "path": "shell/commands/filesystem.php",
     "class": "RM"
+  },
+
+  "cd": {
+    "path": "shell/commands/shell_actions.php",
+    "class": "CHDIR"
+  },
+  "autocomplete": {
+    "path": "shell/commands/shell_actions.php",
+    "class": "AUTOCOMPLETE"
   },
   "test": {
     "path": "shell/commands/shell_actions.php",

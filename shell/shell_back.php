@@ -95,29 +95,35 @@ class SHELL
 		else {
 
 			$cmd = IO::readx();
+			$runningArgs = explode(' ',trim($cmd));
 
-			if( $cmd != false ){
+			if( $cmd != false && $runningArgs[0] == "interrrupt" ){
 
-				$runningArgs = explode(' ',trim($cmd));
+				if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "stop")){
 
-				if( $runningArgs[0] = "interrrupt" ){
-
-					if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "stop")){
-
-						$programClass = SHELL::$PROGRAM;
-						$programClass::stop();	
-					}
-					IO::loopEnd();
-
-					SHELL::$STATE = "idle";
-					SHELL::$PROGRAM = "";
-					SHELL::returnx();
+					$programClass = SHELL::$PROGRAM;
+					$programClass::stop();	
 				}
+				array_shift( $runningArgs );
+				IO::printx( "Interrupt: ".implode( " ", $runningArgs ) );
+				IO::loopEnd();
+
+				SHELL::$STATE = "idle";
+				SHELL::$PROGRAM = "";
+				SHELL::returnx();
 			}
 			else{
 
-				$programClass = SHELL::$PROGRAM;
-				$programClass::loop();
+				if( $cmd!=false ){
+
+					IO::replyx( $cmd );
+				}
+
+				if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "loop") ){
+
+					$programClass = SHELL::$PROGRAM;
+					$programClass::loop();	
+				}
 			}
 
 		}
