@@ -4,11 +4,11 @@
 
 // ----------- Constants & Globals ---------------
 var IO_CLOCK = 1000;
-// var errorTime = 5000;
-
 
 var timeout;
 var lastPath = "/";
+var commandBuffer = [""];
+var commandHistory = 0;
 // -----------------------------------------------
 
 
@@ -39,8 +39,31 @@ var STM = {
 						$("#path").text("");
 						this.state = "running";
 						longpoll( $("#cmd").val() );
+						commandBuffer.unshift( $("#cmd").val() );
+						commandHistory = 0;
 						$("#cmd").val("");
 					}
+				}
+				else if( eventType == "keypress" && eventContent == "up"  ){
+
+					if( commandHistory < commandBuffer.length ){
+
+						$("#cmd").val( commandBuffer[commandHistory] );
+						commandHistory++;
+					}
+				}
+				else if( eventType == "keypress" && eventContent == "down"  ){
+
+					if( commandHistory > 1 ){
+
+						commandHistory--;
+						$("#cmd").val( commandBuffer[commandHistory-1] );
+					}
+					else if ( commandHistory == 1 ){
+
+						commandHistory = 0;
+						$("#cmd").val("");
+					}				
 				}
 				else if( eventType == "keypress" && eventContent == "tab"  ){
 
@@ -211,6 +234,8 @@ function longpoll( postData ){
 // ------------------ Events ---------------------
 $(document).keypress(function(e) {
 
+	// console.log( "w: "+ e.which +" k: " + e.keyCode );
+
 	if(e.which == 13) {
 	// Enter pressed, push command to buffer
 
@@ -227,6 +252,18 @@ $(document).keypress(function(e) {
 
 		e.preventDefault();
 		STM.stateEvent( "keypress", "tab" );
+	}
+	else if(e.which == 0 && e.keyCode == 38) {
+	// Tab pressed, autocomplete
+
+		e.preventDefault();
+		STM.stateEvent( "keypress", "up" );
+	}
+	else if(e.which == 0 && e.keyCode == 40) {
+	// Tab pressed, autocomplete
+
+		e.preventDefault();
+		STM.stateEvent( "keypress", "down" );
 	}
 });
 

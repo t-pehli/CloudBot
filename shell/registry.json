@@ -33,9 +33,9 @@
     "path": "shell/commands/shell_actions.php",
     "class": "AUTOCOMPLETE"
   },
-  "test": {
+  "clear": {
     "path": "shell/commands/shell_actions.php",
-    "class": "TEST"
+    "class": "CLEAR"
   },
   "aliases": {
   	"poweroff":"shutdown"

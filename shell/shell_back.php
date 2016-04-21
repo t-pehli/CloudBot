@@ -152,7 +152,9 @@ class SHELL
 	// --------------- Helper Methods ----------------
 	public static function parse ( $cmd ) {
 
-		SHELL::$ARGS = explode(' ',trim($cmd));
+		$cmd = trim( preg_replace( '/\s+/', ' ', $cmd ) );
+
+		SHELL::$ARGS = explode(' ', $cmd );
 
 		$registry = json_decode( file_get_contents("shell/registry.json"), true);
 

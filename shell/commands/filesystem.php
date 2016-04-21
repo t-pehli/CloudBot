@@ -82,11 +82,14 @@ class LS
 					$items[$key] = "/".$item;
 				}
 			}
-			usort( $items, "cmp" );
 			IO::printx( "Items in directory: ".
 				preg_replace( '!^'.$_SERVER['DOCUMENT_ROOT'].'!s', '', $path ) );
 
-			IO::printx( implode( "        ", $items ) );
+			if( !empty( $items ) ){
+
+				usort( $items, "cmp" );
+				IO::printx( implode( "        ", $items ) );
+			}
 			SHELL::returnx();
 		}
 		else {
@@ -149,7 +152,16 @@ class RM
 				array_splice( SHELL::$ARGS, $key, 1 );
 			}
 
-			RM::deleteFileDir( SHELL::$ARGS[1] );
+			if( substr( SHELL::$ARGS[1] , 0, 1) == "/" ){
+
+				$path = ltrim( SHELL::$ARGS[1], "/" );
+			}
+			else{
+
+				$path = ltrim( SHELL::$PATH."/".SHELL::$ARGS[1], "/" );
+			}
+
+			RM::deleteFileDir( $path );
 			SHELL::returnx();
 		}
 		else if( count( SHELL::$ARGS ) > 1 ) {
@@ -235,6 +247,13 @@ class RM
 
 			rmdir( $name );
 			IO::printx( "Error while deleting..." );
+		}
+
+			IO::printx( "|".$name."|" );
+			IO::printx( "|".SHELL::$PATH."|" );
+		if( "/".$name == SHELL::$PATH ){
+
+			SHELL::$PATH = "/";
 		}
 	}
 

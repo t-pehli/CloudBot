@@ -90,7 +90,10 @@
 			}
 			else if( SYSTEM::$STATUS['POWER']=="ON" && SYSTEM::$STATUS['CONNECTION'] == "ON"){
 
-				echo "Another client is connected to CloudOS";
+				echo "Another client is connected to CloudOS, kicking it out now...";
+
+				SYSTEM::$STATUS['CONNECTION'] = "OFF";
+				SYSTEM::saveStatus();
 			}
 			else{
 

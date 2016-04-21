@@ -86,7 +86,7 @@ class AUTOCOMPLETE
 
 			if( count( $results ) == 1 ){
 
-				IO::autox( $results[0] );
+				IO::autox( $results[0]." " );
 			}
 			else if( count( $results ) > 1 ){
 
@@ -188,11 +188,16 @@ class AUTOCOMPLETE
 /**
 * 
 */
-class TEST
+class CLEAR
 {
-	public static function loop(){
+	public static function start(){
 
-		IO::printx( "Testloop" );
+		for ($i=0; $i < 26; $i++) { 
+		
+			IO::printx( "<br>" );
+		}
+
+		SHELL::returnx();
 	}
 
 }
