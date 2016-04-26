@@ -9,6 +9,8 @@ class SHELL
 	// ------------------- Start ---------------------
 	public static function start () {
 
+		SYSTEM::logx("STARTSHELL");
+
 		SHELL::$STATE = "idle";
 		SHELL::$PATH = "/";
 		SYSTEM::$MEMORY['SHELL_STATE'] = SHELL::$STATE;
@@ -25,6 +27,7 @@ class SHELL
 	public static function resume () {
 
 		require_once( "shell/io/io_manager.php" );
+		IO::resume();
 
 		SHELL::$STATE = SYSTEM::$MEMORY['SHELL_STATE'];
 		SHELL::$PATH = SYSTEM::$MEMORY['SHELL_PATH'];
@@ -85,11 +88,6 @@ class SHELL
 						$programClass::resume();
 					}
 				}
-				else {
-
-					IO::printx( "No command '".$cmd."' found." );
-					IO::returnx();
-				}
 			}
 		}
 		else {
@@ -97,7 +95,10 @@ class SHELL
 			$cmd = IO::readx();
 			$runningArgs = explode(' ',trim($cmd));
 
-			if( $cmd != false && $runningArgs[0] == "interrrupt" ){
+			if( $cmd != false && (
+				$runningArgs[0] == "interrupt"
+				|| ( $runningArgs[0] == "reconnect" && $runningArgs[1] == "interrupt") 
+			) ){
 
 				if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "stop")){
 
@@ -114,7 +115,7 @@ class SHELL
 			}
 			else{
 
-				if( $cmd!=false ){
+				if( $cmd!=false && $runningArgs[0] != "reconnect" ){
 
 					IO::replyx( $cmd );
 				}
@@ -141,6 +142,7 @@ class SHELL
 			$programClass = SHELL::$PROGRAM;
 			$programClass::pause();	
 		}
+		IO::pulsex();
 		IO::loopEnd();
 
 		SYSTEM::$MEMORY['SHELL_STATE'] = SHELL::$STATE;
@@ -149,15 +151,30 @@ class SHELL
 	}
 	// -----------------------------------------------
 
+	// ------------------ Stop -----------------------
+	public static function stop () {
+
+		if( SHELL::$PROGRAM != "" && method_exists( SHELL::$PROGRAM, "stop")){
+
+			$programClass = SHELL::$PROGRAM;
+			$programClass::stop();	
+		}
+	}
+	// -----------------------------------------------
+
 	// --------------- Helper Methods ----------------
 	public static function parse ( $cmd ) {
 
-		$cmd = trim( preg_replace( '/\s+/', ' ', $cmd ) );
+		$cmd = trim( preg_replace( '~\s+~', ' ', $cmd ) );
 
 		SHELL::$ARGS = explode(' ', $cmd );
+		if( SHELL::$ARGS[0] == "reconnect" ){
+			array_splice( SHELL::$ARGS, 0, 1 );
+		}
 
 		$registry = json_decode( file_get_contents("shell/registry.json"), true);
 
+		
 		if( array_key_exists( SHELL::$ARGS[0], $registry['aliases'] ) ){
 
 			$programName = $registry['aliases'][SHELL::$ARGS[0]];
@@ -167,7 +184,12 @@ class SHELL
 			$programName = SHELL::$ARGS[0];
 		}
 
-		if( array_key_exists( $programName, $registry ) ){
+		if( SHELL::$ARGS[0] == "interrupt" ){
+
+			IO::printx( "" );
+			IO::returnx();
+		}
+		else if( array_key_exists( $programName, $registry ) ){
 
 			include_once( $registry[$programName]["path"] );
 
@@ -182,6 +204,12 @@ class SHELL
 				IO::returnx();
 				return false;
 			}
+		}
+		else {
+
+			IO::printx( "No command '".$cmd."' found." );
+			IO::returnx();
+			return false;
 		}
 	}
 

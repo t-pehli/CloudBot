@@ -14,6 +14,7 @@ class SHUTDOWN
 
 }
 
+
 /**
 * 
 */
@@ -30,7 +31,7 @@ class RESTART
 		SHELL::$PATH = "/";
 		SHELL::pause();
 		
-		PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
+		PULSE::fire();
 	}
 
 	public static function resume(){
@@ -40,7 +41,34 @@ class RESTART
 
 }
 
+/**
+* 
+*/
+class ECHOX
+{
+	public static function start(){
 
+		 if ( count( SHELL::$ARGS ) >1 ){
+
+		 	array_splice( SHELL::$ARGS, 0, 1 );
+		 	try {
+
+		 		$result = eval( "return ".implode( ' ', SHELL::$ARGS ).";" );
+		 	} catch ( Exception $e ) {
+
+		 		$result = $e;
+		 	}
+		 	
+			IO::printx( $result );
+			SHELL::returnx();
+		}
+		else{
+			IO::printx( "Usage: ".SHELL::$ARGS[0]." <php expression>");
+			SHELL::returnx();
+		}
+	}
+
+}
 /**
 * 
 */
@@ -48,12 +76,18 @@ class PING
 {
 	public static function start(){
 
-		if( SHELL::$ARGS[1] =="-s" ){
+		if( count( SHELL::$ARGS ) > 1 && SHELL::$ARGS[1] =="-s" ){
 
 			SYSTEM::$STATUS['CONNECTION'] = "ON";
 			SYSTEM::saveStatus();
 
 			IO::setx( "IO_CLOCK", SYSTEM::$PARAMETERS['IO_CLOCK'] );
+
+			SHELL::returnx();	
+		}
+		else if( count( SHELL::$ARGS ) > 1 && SHELL::$ARGS[1] =="-curl" ){
+
+			IO::printx( PULSE::check( SYSTEM::$PARAMETERS['ADDRESS'] ) );
 
 			SHELL::returnx();	
 		}

@@ -120,22 +120,24 @@ class AUTOCOMPLETE
 
 				$tail = ltrim( $path, "/" );
 			}
-			$searchPath = preg_replace('/'.$tail.'$/s', '', $path);
 
+			if( $tail !== "" ){
 
-			$items = scandir( $_SERVER['DOCUMENT_ROOT']."/".$searchPath );
+				$searchPath = preg_replace('~'.$tail.'$~s', '', $path);
+				$items = scandir( $_SERVER['DOCUMENT_ROOT']."/".$searchPath );
 
-			if( $items ){
+				if( $items ){
 
-				foreach( $items as $value ){
+					foreach( $items as $value ){
 
-					if( strpos( $value, $tail ) === 0 ){
+						if( strpos( $value, $tail ) === 0 ){
 
-						array_push( $results, $value );
+							array_push( $results, $value );
+						}
 					}
 				}
 			}
-
+			
 			if( count( $results ) == 1 ){
 
 				$cmdArray = SHELL::$ARGS;
@@ -160,7 +162,7 @@ class AUTOCOMPLETE
 				else{
 					
 					$cmdArray[$lastArg] = preg_replace( 
-						'/'.$tail.'$/s', $results[0],
+						'~'.$tail.'$~s', $results[0],
 						SHELL::$ARGS[$lastArg]
 					);
 

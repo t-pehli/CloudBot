@@ -10,7 +10,6 @@
 		if( $_GET['access'] == 'directive' ){
 
 			require('kernel/system.php');
-			SYSTEM::loadEnvironment();
 			
 			if(isset($_POST['directive'])){
 
@@ -18,7 +17,7 @@
 			}
 			else {
 
-				SYSTEM::runDirective("STATUS");
+				SYSTEM::runDirective("CONTROLS");
 			}
 		}
 
@@ -51,7 +50,7 @@
 			}
 			
 			// ============= Loop ===============
-			while( SYSTEM::$CYCLE != -1 && SYSTEM::$CYCLE<100 ){ // about 600 cycles without limit
+			while( SYSTEM::$CYCLE != -1 ){ // about 600 cycles without limit
 
 				SYSTEM::loop();
 				$MAIN::loop();
@@ -60,22 +59,16 @@
 			// ========= Pause & Pulse ==========
 			if( SYSTEM::$STATUS['POWER'] == "ON" ){
 
+				PULSE::next();
+				
 				if( method_exists( $MAIN, "pause")){
 
 					$MAIN::pause();	
 				}
 				SYSTEM::logx( "PULSE ".PULSE::$COUNT );
-				PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
+				SYSTEM::$STATUS['POWER'] = "DONE";
+				PULSE::fire();
 			}
-			else{
-
-			// ============= Stop ==============
-				if( method_exists( $MAIN, "stop")){
-
-					$MAIN::stop();	
-				}
-			}
-			// ==================================
 
 		} else if ( $_GET['access'] == 'client' ){
 			// user connected
@@ -85,15 +78,17 @@
 
 			if( SYSTEM::$STATUS['POWER']=="ON" && SYSTEM::$STATUS['CONNECTION'] == "OFF"){
 
+				require( "kernel/pulse_manager.php" );
+				PULSE::$COUNT = 0;
+				PULSE::fire();
+
 				$env = SYSTEM::$STATUS['ENVIRONMENT'];
 				require( SYSTEM::$PARAMETERS['ENVIRONMENTS'][$env]['LOCATION_FRONT'] );
 			}
 			else if( SYSTEM::$STATUS['POWER']=="ON" && SYSTEM::$STATUS['CONNECTION'] == "ON"){
 
-				echo "Another client is connected to CloudOS, kicking it out now...";
-
-				SYSTEM::$STATUS['CONNECTION'] = "OFF";
-				SYSTEM::saveStatus();
+				$env = SYSTEM::$STATUS['ENVIRONMENT'];
+				require( SYSTEM::$PARAMETERS['ENVIRONMENTS'][$env]['LOCATION_FRONT'] );
 			}
 			else{
 

@@ -7,8 +7,11 @@ var IO_CLOCK = 1000;
 
 var timeout;
 var lastPath = "/";
+var lastCmd = "";
 var commandBuffer = [""];
 var commandHistory = 0;
+var address = window.location.hostname;
+var tempAddress;
 // -----------------------------------------------
 
 
@@ -38,8 +41,10 @@ var STM = {
 						
 						$("#path").text("");
 						this.state = "running";
-						longpoll( $("#cmd").val() );
-						commandBuffer.unshift( $("#cmd").val() );
+						lastCmd = $("#cmd").val();
+
+						longpoll( lastCmd );
+						commandBuffer.unshift( lastCmd );
 						commandHistory = 0;
 						$("#cmd").val("");
 					}
@@ -75,7 +80,6 @@ var STM = {
 				else if( eventType == "poll" ){
 
 					var i=0;
-					var i=0;
 					while( i<eventContent.length && eventContent[i].type == "msg" ){
 						// run though incoming printx msgs 
 
@@ -92,7 +96,19 @@ var STM = {
 
 							$("#cmd").val( eventContent[i].content );
 						}
+					}
+					else if( i<eventContent.length && eventContent[i].type == "path" ){
+						// check if a returnx path is left, finish
+
+						lastPath = eventContent[i].content;
+						$("#path").text( eventContent[i].content +">" );
+
+						this.state = "idle";
+					}
+					else if( !jQuery.isEmptyObject( eventContent ) ) {
+
 						clearTimeout(timeout);
+						timeout = setTimeout( function(){ longpoll(); }, IO_CLOCK);
 					}
 				}
 				break;
@@ -101,68 +117,80 @@ var STM = {
 				if( eventType == "poll" ){
 					
 					var i=0;
-					while( i<eventContent.length && eventContent[i].type == "msg" ){
-						// run though incoming printx msgs 
-
-						var mainDiv = $("#main");
-						mainDiv.append( "<p>"+eventContent[i].content+"</p>" );
-						mainDiv.scrollTop( mainDiv.prop("scrollHeight") );
-						$("#cmd").focus();
-						i++;
-					}
-
-					if( i<eventContent.length && eventContent[i].type == "path" ){
-						// check if a returnx path is left, finish
-
-						lastPath = eventContent[i].content;
-						$("#path").text( eventContent[i].content +">" );
-						clearTimeout(timeout);
-
-						this.state = "idle";
-					}
-					else if( i<eventContent.length && eventContent[i].type == "ping" ){
-						// got a ping back, (re)start session
-
-						$("#path").text( lastPath +">" );
-
-						if( eventContent[i].content.substring(0, 3) == "set" ){
-
-							var setArgs = eventContent[i].content.split(" "); // 0 = set
-							
-							if( setArgs[1] == "IO_CLOCK" ){
-								
-								IO_CLOCK = parseInt( setArgs[2] );
-							}
-						}
-						else{
+					while( i<eventContent.length){
+						
+						if( eventContent[i].type == "msg" ){
+							// run though incoming printx msgs 
 
 							var mainDiv = $("#main");
 							mainDiv.append( "<p>"+eventContent[i].content+"</p>" );
 							mainDiv.scrollTop( mainDiv.prop("scrollHeight") );
+							$("#cmd").focus();
 						}
-						
-						clearTimeout(timeout);
+						else if( i<eventContent.length && eventContent[i].type == "path" ){
+							// check if a returnx path is left, finish
 
-						this.state = "idle";
+							lastPath = eventContent[i].content;
+							$("#path").text( eventContent[i].content +">" );
+
+							this.state = "idle";
+						}
+						else if( i<eventContent.length && eventContent[i].type == "ping" ){
+							// got a ping back, (re)start session
+
+							$("#path").text( lastPath +">" );
+
+							if( eventContent[i].content.substring(0, 3) == "set" ){
+
+								var setArgs = eventContent[i].content.split(" "); // 0 = set
+								
+								if( setArgs[1] == "IO_CLOCK" ){
+									
+									IO_CLOCK = parseInt( setArgs[2] );
+								}
+							}
+							else{
+
+								var mainDiv = $("#main");
+								mainDiv.append( "<p>"+eventContent[i].content+"</p>" );
+								mainDiv.scrollTop( mainDiv.prop("scrollHeight") );
+							}
+
+							this.state = "idle";
+						}
+						else if( i<eventContent.length && eventContent[i].type == "ask" ){
+							// check if a scanx ask is left, block
+
+							$("#path").text( eventContent[i].content +">" );
+
+							this.state = "blocked";
+						}
+						else if( i<eventContent.length && eventContent[i].type == "pulse" ){
+							// cloudOS moved to another address, look there
+
+							tempAddress = eventContent[i].content["URL"];
+
+							this.state = "reconnecting";
+						}
+						i++;
 					}
-					else if( i<eventContent.length && eventContent[i].type == "ask" ){
-						// check if a scanx ask is left, block
+					if( this.state == "running" ){
 
-						$("#path").text( eventContent[i].content +">" );
-						clearTimeout(timeout);
-
-						this.state = "blocked";
-					}
-					else {
 						// if nothing is left, continue polling
+						clearTimeout(timeout);
+						timeout = setTimeout( function(){ longpoll(); }, IO_CLOCK);
+					}
+					else if ( this.state == "reconnecting" ){
 
+						this.state = "running";
+						address = tempAddress;
+						longpoll( "reconnect "+lastCmd );
 					}
 				}
 				else if( eventType == "interrupt" ){
 					
-					$("#path").text( lastPath +">" );
 					this.state = "running";
-					clearTimeout( timeout );
+					clearTimeout(timeout);
 					longpoll( "interrupt " + eventContent );
 					$("#cmd").val("");
 				}
@@ -175,16 +203,14 @@ var STM = {
 						
 						$("#path").text("");
 						this.state = "running";
+						clearTimeout(timeout);
 						longpoll( $("#cmd").val() );
 						$("#cmd").val("");
 					}
 				}
 				else if( eventType == "interrupt" ){
 
-					
-					$("#path").text( lastPath +">" );
 					this.state = "running";
-					clearTimeout( timeout );
 					longpoll( "interrupt " + eventContent );
 					$("#cmd").val("");
 				}
@@ -199,17 +225,15 @@ var STM = {
 function longpoll( postData ){
 	// perform longpoll
 
-	var onSuccess = function(response){
+	var onSuccess = function(r){
 
-		clearTimeout(timeout);
-		timeout = setTimeout( function(){ longpoll(); }, IO_CLOCK);
-
-		STM.stateEvent( "poll", response );		
+		console.log(r);
+		STM.stateEvent( "poll", r );
 	}
+	var onFail = function(r){
 
-	var onFail = function(e){
-
-		STM.stateEvent( "interrupt", e.responseText );
+		console.log(r);
+		STM.stateEvent( "poll", JSON.parse( r.responseText ) );
 	}
 
 
@@ -219,9 +243,9 @@ function longpoll( postData ){
 	}
 		
 	jQuery.ajax({
-		url: "/shell/io/buffer_manager.php",
+		url: "http://"+address+"/shell/io/buffer_manager.php",
 		type: 'POST',
-		dataType: 'JSON',
+		dataType: 'JSONP',
 		data: { data: postData },
 		success: onSuccess,
 		error: onFail

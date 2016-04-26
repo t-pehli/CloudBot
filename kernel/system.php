@@ -28,7 +28,7 @@ class SYSTEM
 	// ---------- Main Operation Methods -------------
 	public static function loop(){
 
-		if( !PULSE::check() ){
+		if( PULSE::$END_TIME - ( microtime(true)*1000 ) < 1 || SYSTEM::$CYCLE > 300 ){
 
 			SYSTEM::$CYCLE = -1;
 		}
@@ -39,7 +39,7 @@ class SYSTEM
 		}
 
 		
-		if( PULSE::$COUNT > 150 ){ //TODO remove debug mode
+		if( PULSE::$COUNT > 550 ){ //TODO remove debug mode
 
 			SYSTEM::$CYCLE = -1;
 			SYSTEM::powerOff();
@@ -53,16 +53,22 @@ class SYSTEM
 
 			echo json_encode( SYSTEM::$STATUS );
 		}
+		else if( strcasecmp( $directive, "CONTROLS") == 0 ){
+
+			require ( "idle.php" );
+		}
 		else if( strcasecmp( $directive, "START") == 0 ){
 
+			SYSTEM::loadEnvironment();
 			SYSTEM::powerOn();
+			require ( "idle.php" );
 		}
 		else if( strcasecmp( $directive, "STOP") == 0 ){
 
+			SYSTEM::loadEnvironment();
 			SYSTEM::powerOff();
-			echo json_encode( SYSTEM::$STATUS );
+			require ( "idle.php" );
 		}
-		
 	}
 
 
@@ -76,11 +82,6 @@ class SYSTEM
 			SYSTEM::$STATUS['CONNECTION'] = "OFF";
 			SYSTEM::saveStatus();
 
-			require( SYSTEM::$PARAMETERS['ENVIRONMENTS'][SYSTEM::$ENVIRONMENT]['LOCATION_FRONT'] );
-			
-			require( "kernel/pulse_manager.php" );
-			PULSE::$COUNT = 0;
-			PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
 		}
 		else {
 
@@ -90,17 +91,18 @@ class SYSTEM
 
 	public static function powerOff(){
 
-		if( SYSTEM::$STATUS['POWER'] != "OFF" ){
+		// ============= Stop ==============
+		$MAIN = SYSTEM::$PARAMETERS['ENVIRONMENTS'][SYSTEM::$ENVIRONMENT]['MAIN_CLASS'];
+		if( method_exists( $MAIN, "stop")){
 
-			SYSTEM::$STATUS = [];
-			SYSTEM::$STATUS['POWER'] = "OFF";
-			SYSTEM::$STATUS['CONNECTION'] = "OFF";
-			SYSTEM::saveStatus();
+			$MAIN::stop();	
 		}
-		else {
+		// ==================================
 
-			SYSTEM::logx( "Already offline!" );
-		}
+		SYSTEM::$STATUS = [];
+		SYSTEM::$STATUS['POWER'] = "OFF";
+		SYSTEM::$STATUS['CONNECTION'] = "OFF";
+		SYSTEM::saveStatus();
 	}
 	// -----------------------------------------------
 
@@ -112,6 +114,12 @@ class SYSTEM
 		foreach ($conf as $property => $value) {
 			SYSTEM::$PARAMETERS[$property] = $value;
 		}
+	}
+
+	public static function saveConfiguration(){
+
+		$conf = json_encode( SYSTEM::$PARAMETERS, JSON_PRETTY_PRINT );
+		file_put_contents( "kernel/conf.json", $conf );
 	}
 
 	public static function loadStatus( ){
@@ -184,7 +192,9 @@ class SYSTEM
 				SYSTEM::logx( "Error ".$error["type"].": ".$error["message"] );
 				SYSTEM::logx( "File: ".$error["file"]." line: ".$error["line"] );
 			}
-			if ( $error['type'] === E_ERROR || $error['type'] === E_PARSE ) {
+			if( $error['type'] == E_ERROR 
+				|| $error['type'] == E_COMPILE_ERROR 
+				|| ( $error['type'] == E_PARSE && SYSTEM::$STATUS['POWER'] != "DONE" ) ){
 				// fatal error has occured
 
 				if( isset( SYSTEM::$ENVIRONMENT ) ){
@@ -193,9 +203,10 @@ class SYSTEM
 					$MAIN::handleShutdown( $error );
 				}
 
+				
 				SYSTEM::$STATUS['POWER'] = "RESTART";
 				SYSTEM::saveStatus();
-				PULSE::fire( SYSTEM::$PARAMETERS['ADDRESS'] );
+				PULSE::fire();
 			}
 		}
 

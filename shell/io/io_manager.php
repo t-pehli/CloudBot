@@ -7,10 +7,43 @@
 class IO
 {
 
-	// ---------------- Constructor ------------------
+	// ----------------- Start ------------------
 	public static function start () {
 
 		IO::$bufferCounter = 0;
+		file_put_contents("shell/io/output_buffer", "");
+		file_put_contents("shell/io/input_buffer", "");
+	}
+	// ------------------------------------------
+
+	// ---------------- Resume ------------------
+	public static function resume () {
+
+		file_put_contents("shell/io/input_buffer", "");
+
+		$serialOutput = file_get_contents( "shell/io/output_buffer" );
+		$serialOutput = '['.substr($serialOutput, 2).']';
+		$output = json_decode( $serialOutput, true );
+
+		if( !empty( $output ) ){
+
+			foreach ( $output as $key => $value) {
+				
+				if( isset($value['type']) && $value['type'] == "pulse" ){
+
+					array_splice( $output, $key, 1);
+				}
+			}
+
+			$serialOutput = trim( json_encode( $output ), "[]" );
+			if( $serialOutput != "" ){
+
+				$serialOutput = ",\n".$serialOutput;
+			}
+		SYSTEM::logx( $serialOutput );
+
+			file_put_contents("shell/io/output_buffer", $serialOutput);
+		}		
 	}
 	// -----------------------------------------------
 
@@ -135,6 +168,16 @@ class IO
 		IO::$bufferCounter++;
 		array_push( IO::$outputBuffer, $serialOut );
 	}
+
+
+	public static function pulsex(){
+
+		$serialOut = json_encode( 
+			array( "id"=>IO::$bufferCounter, "type"=>"pulse", "content"=>PULSE::$NEXT ));
+
+		IO::$bufferCounter++;
+		array_push( IO::$outputBuffer, $serialOut );
+	}
 	// -----------------------------------------------
 
 	// ---------- Shell IO Helper Methods ------------
@@ -173,7 +216,6 @@ class IO
 	private static $bufferCounter;
 
 }
-IO::start();
 
 
 

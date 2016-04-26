@@ -1,17 +1,21 @@
 {
-	"SERVER_TIMEOUT":"10000",
-	"IO_CLOCK":"500",
-	"VERSION":"0.2",
-	"ADDRESS":{
-		"URL":"cloudbot.localhost",
-		"PORT":"80",
-		"IP":"127.0.0.1"
-	},
-	"ENVIRONMENTS":{
-		"SHELL":{
-			"LOCATION_FRONT":"shell/shell_front.php",
-			"LOCATION_BACK":"shell/shell_back.php",
-			"MAIN_CLASS":"SHELL"
-		}
-	}
+    "SERVER_TIMEOUT": "10000",
+    "IO_CLOCK": "500",
+    "VERSION": "0.2",
+    "ADDRESS": {
+        "URL": "cloudbot.localhost",
+        "PORT": "80",
+        "IP": "127.0.0.1"
+    },
+    "TASKMASTER": {
+        "LOCATION": "taskmasters\/serialgroup.php",
+        "MAIN_CLASS": "SERIALGROUP"
+    },
+    "ENVIRONMENTS": {
+        "SHELL": {
+            "LOCATION_FRONT": "shell\/shell_front.php",
+            "LOCATION_BACK": "shell\/shell_back.php",
+            "MAIN_CLASS": "SHELL"
+        }
+    }
 }

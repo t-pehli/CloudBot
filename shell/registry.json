@@ -7,9 +7,18 @@
     "path": "shell/commands/system.php",
     "class": "RESTART"
   },
+  "echox": {
+    "path": "shell/commands/system.php",
+    "class": "ECHOX"
+  },
   "ping": {
     "path": "shell/commands/system.php",
     "class": "PING"
+  },
+
+  "taskmaster": {
+    "path": "shell/commands/conf_edit.php",
+    "class": "CONF_TASKMASTER"
   },
 
   "ls": {
@@ -38,6 +47,8 @@
     "class": "CLEAR"
   },
   "aliases": {
-  	"poweroff":"shutdown"
+  	"poweroff":"shutdown",
+    "echo":"echox",
+    "tm":"taskmaster"
   }
 }

@@ -20,11 +20,11 @@
 	} while ( $output == "" && microtime(true)*1000 < $BUFFER_START + $BUFFER_TIMEOUT );
 
 	if ( $output == "" ){
-		echo "{}";		
+		echo $_GET['callback'] . "({});";
 	}
 	else {
 	
-		echo '['.substr($output, 2).']';
+		echo $_GET['callback'] . "([".substr($output, 2)."]);";
 	}
 	// =========================================
 

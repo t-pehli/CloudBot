@@ -1,7 +1,3 @@
-<?php 
-		file_put_contents("shell/io/output_buffer", "");
-		file_put_contents("shell/io/input_buffer", "");
-?>
 <!DOCTYPE html>
 <html>
 <head>

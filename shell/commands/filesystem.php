@@ -83,7 +83,7 @@ class LS
 				}
 			}
 			IO::printx( "Items in directory: ".
-				preg_replace( '!^'.$_SERVER['DOCUMENT_ROOT'].'!s', '', $path ) );
+				preg_replace( '~^'.$_SERVER['DOCUMENT_ROOT'].'~s', '', $path ) );
 
 			if( !empty( $items ) ){
 
@@ -146,9 +146,9 @@ class RM
 {
 	public static function start(){
 
-		if( count( SHELL::$ARGS ) > 1 && in_array( "-y", SHELL::$ARGS ) ){
+		if( count( SHELL::$ARGS ) > 1 && in_array( "-f", SHELL::$ARGS ) ){
 			// force delete
-			if( ( $key = array_search( "-y", SHELL::$ARGS ) ) !== false ) {
+			if( ( $key = array_search( "-f", SHELL::$ARGS ) ) !== false ) {
 				array_splice( SHELL::$ARGS, $key, 1 );
 			}
 
@@ -249,8 +249,6 @@ class RM
 			IO::printx( "Error while deleting..." );
 		}
 
-			IO::printx( "|".$name."|" );
-			IO::printx( "|".SHELL::$PATH."|" );
 		if( "/".$name == SHELL::$PATH ){
 
 			SHELL::$PATH = "/";
