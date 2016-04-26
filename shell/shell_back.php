@@ -72,7 +72,7 @@ class SHELL
 
 			$cmd = IO::readx();
 
-			if( $cmd != false ){
+			if( $cmd !== false ){
 
 				if( SHELL::parse( $cmd ) ){
 
@@ -170,6 +170,7 @@ class SHELL
 		SHELL::$ARGS = explode(' ', $cmd );
 		if( SHELL::$ARGS[0] == "reconnect" ){
 			array_splice( SHELL::$ARGS, 0, 1 );
+			$cmd = implode( ' ', SHELL::$ARGS );
 		}
 
 		$registry = json_decode( file_get_contents("shell/registry.json"), true);

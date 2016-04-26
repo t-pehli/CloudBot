@@ -20,30 +20,30 @@ class IO
 	public static function resume () {
 
 		file_put_contents("shell/io/input_buffer", "");
+		file_put_contents("shell/io/output_buffer", "");
 
-		$serialOutput = file_get_contents( "shell/io/output_buffer" );
-		$serialOutput = '['.substr($serialOutput, 2).']';
-		$output = json_decode( $serialOutput, true );
+	// 	$serialOutput = file_get_contents( "shell/io/output_buffer" );
+	// 	$serialOutput = '['.substr($serialOutput, 2).']';
+	// 	$output = json_decode( $serialOutput, true );
 
-		if( !empty( $output ) ){
+	// 	if( !empty( $output ) ){
 
-			foreach ( $output as $key => $value) {
+	// 		foreach ( $output as $key => $value) {
 				
-				if( isset($value['type']) && $value['type'] == "pulse" ){
+	// 			if( isset($value['type']) && $value['type'] == "pulse" ){
 
-					array_splice( $output, $key, 1);
-				}
-			}
+	// 				array_splice( $output, $key, 1);
+	// 			}
+	// 		}
 
-			$serialOutput = trim( json_encode( $output ), "[]" );
-			if( $serialOutput != "" ){
+	// 		$serialOutput = trim( json_encode( $output ), "[]" );
+	// 		if( $serialOutput != "" ){
 
-				$serialOutput = ",\n".$serialOutput;
-			}
-		SYSTEM::logx( $serialOutput );
+	// 			$serialOutput = ",\n".$serialOutput;
+	// 		}
 
-			file_put_contents("shell/io/output_buffer", $serialOutput);
-		}		
+	// 		file_put_contents("shell/io/output_buffer", $serialOutput);
+	// 	}		
 	}
 	// -----------------------------------------------
 

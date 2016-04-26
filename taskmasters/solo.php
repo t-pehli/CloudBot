@@ -13,7 +13,7 @@ class SOLO
 	}
 
 
-	public static function fire(){
+	public static function next(){
 
 		PULSE::$NEXT = SOLO::$address;
 	}

@@ -43,7 +43,7 @@ var STM = {
 						this.state = "running";
 						lastCmd = $("#cmd").val();
 
-						longpoll( lastCmd );
+						longpoll( lastCmd+" " );
 						commandBuffer.unshift( lastCmd );
 						commandHistory = 0;
 						$("#cmd").val("");

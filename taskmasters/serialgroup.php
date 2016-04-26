@@ -52,13 +52,15 @@ class SERIALGROUP
 	public static function edit( $options ){
 
 		if( $options[0] == "add" 
-			&& isset( $options[1] ) 
-			&& isset( $options[2] ) 
-			&& isset( $options[3] ) ){
+			// && isset( $options[1] ) 
+			// && isset( $options[2] ) 
+			// && isset( $options[3] ) ){
+			){
 
 			$count = count( SERIALGROUP::$addressList );
 
-			$newAddress = array( "URL"=>$options[1], "PORT"=>$options[2], "IP"=>$options[3] );
+			$newAddress = array( "URL"=>"cloudmaster.localhost", "PORT"=>"80", "IP"=>"127.0.0.1" );
+			// $newAddress = array( "URL"=>$options[1], "PORT"=>$options[2], "IP"=>$options[3] );
 			$newCount = array_push( SERIALGROUP::$addressList, $newAddress );
 
 			if( $newCount > $count ){
